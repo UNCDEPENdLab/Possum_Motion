@@ -32,17 +32,19 @@ function die {
 export FSLOUTPUTTYPE=NIFTI_GZ
 
 # put possum and tools in the path
-PATH="$PATH:$PBS_HOME/Possum-02-2012/bin"
+PATH="$PATH:$HOME/Possum-02-2012/bin"
 
- VARDIR="$PBS_HOME/Possum-02-2012/variables/"
-BASEDIR="$PBS_HOME/Possum-02-2012/defaults/"
+ VARDIR="$HOME/Possum-02-2012/variables/"
+BASEDIR="$HOME/Possum-02-2012/defaults/"
 #BASEDIR="/Users/michaelhallquist/Data_Analysis/rs-fcMRI_Motion/possum" #CHANGE ME! location of possum files
 #BASEDIR="/Volumes/Serena/possum_speedup_tests_xsede/" # change me!
 
 TotalCPUs=128
 
 # runs the BlockedSize (16) jobs
-qsubScript=./queuer.sh 
+scriptDir="$HOME/Possum-02-2012/PBS_scripts/"
+qsubScript=$scriptDir/queuer.sh 
+
 [ -r "$qsubScript" ] || die  "cannot open queuer $qsubScript!"
 
 # number to run in qsub, defined by queuer

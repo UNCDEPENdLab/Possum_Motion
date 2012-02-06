@@ -40,6 +40,7 @@ function generateNumVol {
 
   # start with motion at TR*1
   # extend last motion until end if file is shorter than num TRs (e.g. zeromotion)
+echo $motionFile $TR $volnum
   perl -slane 'BEGIN{$n=0;@l=(); 
                sub pline{ print join("  ",((shift) - 1)*$ENV{TR},@l)  }} 
                @l=@F[1...$#F]; 
@@ -80,16 +81,16 @@ function generateNumVol {
 }
 
 #set 
-      TR=1.5
-TR_pulse=2.05
-  volnum=15
+export       TR=1.5
+export TR_pulse=2.05
+export   volnum=15
 
-MotionFile=defaults/zeromotion
+export motionFile=defaults/zeromotion
 
-ActivePrefix="act${TR}_${volnum}_$(date +%F)"
-MotionPrefix="zero_${volnum}_$(date +%F)"
+export ActivePrefix="act${TR}_${volnum}_$(date +%F)"
+export MotionPrefix="zero_${volnum}_$(date +%F)"
 
-source $PBS_HOME/Possum-02-2012/PBS_scripts/environment.sh
+source $HOME/Possum-02-2012/PBS_scripts/environment.sh
 
 
 generateNumVol 2>&1 | tee -a logs/makefiles.log

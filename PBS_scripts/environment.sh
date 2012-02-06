@@ -58,11 +58,11 @@ BlockedSize=$(perl -ne 'print $1 if /^#PBS\s+-l\s+ncpus=(\d+)/' $qsubScript)
 
 
 # files used for every run of every simulation
-#      MotfionFile=    <-- should be coming from parent script
+#       MotionFile=    <-- should be coming from parent script
 #     ActivePrefix=    <-- should be coming from parent script
-
+	    numvol=$(perl -le 'print $1 if $ENV{MotionFile} =~ /\d+_(\d+)/')
          BrainFile="${BASEDIR}/possum_10653_fast.nii.gz"
-         PulseFile="${BASEDIR}/pulse" 			#*** 
+         PulseFile="${BASEDIR}/pulse_$numvol" 			#*** PULSE is pulse_numvols -- determin from MotionFile
             RFFile="${BASEDIR}/slcprof"
             MRFile="${BASEDIR}/MRpar_3T"
     ActivationFile="${VARDIR}/${ActivePrefix}.nii.gz"

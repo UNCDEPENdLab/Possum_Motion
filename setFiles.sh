@@ -58,12 +58,14 @@ function generateNumVol {
     -prefix $ActivationFile
   
    # and make TR what we want
+   pushd  $VARDIR
    3drefit -TR $TR $ActivationFile 
+   popd
 
    echo "made: $ActivationFile" 
 
    # build pulse
-   pulse -i ${Brain} -o ${BASEDIR}/pulse_${volnum} --te=0.029 --tr=2.05 \
+   pulse -i ${BrainFile} -o ${BASEDIR}/pulse_${volnum} --te=0.029 --tr=2.05 \
     --trslc=0.066 --nx=58 --ny=58 --dx=0.0032 --dy=0.0032 \
     --maxG=0.04 --riset=0.0002 --bw=156252 \
     --numvol=$volnum --numslc=31 --slcthk=0.0039 --zstart=0.038 \
@@ -84,7 +86,7 @@ export activationBaseFile=defaults/10653_POSSUM4D_bb244_fullFreq_RPI.nii.gz
 export ActivePrefix="act${TR}_${volnum}"
 export MotionPrefix="zero_${TR}_${volnum}"
 
-## load MotionFile and AcitvationFile activationTimeFile
+## load BrainFile AcitvationFile activationTimeFile
 source $HOME/Possum-02-2012/PBS_scripts/environment.sh
 
 

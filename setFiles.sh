@@ -19,28 +19,21 @@ set -e
 #   o generate new activation time course
 #   o generate new pulse
 #   - needs defined:
-#     TR, volnum, rundir, motionFile, and activationNiiFIle
+#     TR, volnum, rundir, motionFile, and activationBaseFile
 ##########
 function generateNumVol {
   
   echo ==== constructing $TR $volnum ====
   
 
-  #mkdir -p "$rundir/{log,output}" 2>/dev/null 
 
   # each line corresponds to one volume step in time
   # replace TR intervals with new ones
   
-  #paste -d " " \
-  #  <(perl -le "print $TR*\$_ for (1..$volnum)") \
-  #  <(head  -n${volnum} $motionFile |cut -d' ' -f2-) \
-  #  > ${rundir}/testmotion
 
 
-
-  # start with motion at TR*1
+  # start with motion at 0
   # extend last motion until end if file is shorter than num TRs (e.g. zeromotion)
-echo $motionFile $TR $volnum
   perl -slane 'BEGIN{$n=0;@l=(); 
                sub pline{ print join("  ",((shift) - 1)*$ENV{TR},@l)  }} 
                @l=@F[1...$#F]; 
@@ -48,26 +41,26 @@ echo $motionFile $TR $volnum
                $n=$.; 
                END{
                   pline($n) while(++$n<=$ENV{volnum})
-               }' $motionFile > ${VARDIR}/${MotionPrefix}motion
+               }' $motionBaseFile > ${VARDIR}/${MotionPrefix}motion
 
    echo "made: ${VARDIR}/${MotionPrefix}motion"
 
    #head  -n${volnum} $activationTimeFile > ${rundir}/activation_time  
    #Build timecourse
-   perl -le "print $TR*\$_ + $TR*4 for (0..$volnum-1)" > ${VARDIR}/${ActivePrefix}_time
+   perl -le "print $TR*\$_ + $TR*4 for (0..$volnum-1)" >  $ActivationTimeFile
  
-   echo "made: ${VARDIR}/${ActivePrefix}_time"
+   echo "made: $ActivationTimeFile"
 
   
    # activation map w/vols from 0-199 needs to be 0-(volnum-1)
    3dTcat \
-    ${activationNiiFile}[0..$((($volnum-1)))] \
-    -prefix ${VARDIR}/{$ActivePrefix}.nii.gz
+    ${activationBaseFile}[0..$((($volnum-1)))] \
+    -prefix $ActivationFile
   
    # and make TR what we want
-   3drefit -TR $TR ${VARDIR}/{$ActivePrefix}.nii.gz
+   3drefit -TR $TR $ActivationFile 
 
-   echo "made: ${VARDIR}/{$ActivePrefix}.nii.gz" 
+   echo "made: $ActivationFile" 
 
    # build pulse
    pulse -i ${Brain} -o ${BASEDIR}/pulse_${volnum} --te=0.029 --tr=2.05 \
@@ -85,11 +78,13 @@ export       TR=1.5
 export TR_pulse=2.05
 export   volnum=15
 
-export motionFile=defaults/zeromotion
+export motionBaseFile=defaults/zeromotion
+export activationBaseFile=defaults/10653_POSSUM4D_bb244_fullFreq_RPI.nii.gz
 
-export ActivePrefix="act${TR}_${volnum}_$(date +%F)"
-export MotionPrefix="zero_${volnum}_$(date +%F)"
+export ActivePrefix="act${TR}_${volnum}"
+export MotionPrefix="zero_${TR}_${volnum}"
 
+## load MotionFile and AcitvationFile activationTimeFile
 source $HOME/Possum-02-2012/PBS_scripts/environment.sh
 
 

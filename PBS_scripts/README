@@ -1,0 +1,14 @@
+environment.sh --  should contain vars that point to needed files (brain, pulse, rf, mr)
+
+master.sh      --  use variables/activation* and variables/*motion to decided what loops to run
+               --  timecourse for activation is expected to have the same prefix as .nii.gz but end with _time
+
+	       --  calls qsub on queuer.sh  ceil(numpoc/16) times
+               --  spawns        waiter.sh  to wait for all to finish and run possum_sum & signal2image
+
+               -- UNCOMMET actual qsub command
+
+
+queuer.sh      -- UNCOMMENT actual run code (currently only echos what it would do)
+
+waiter.sh      -- corrected bad logic in detecing if complete. UNTESTED (grep -l |wc == totalcpus --> end wait loop) 

@@ -1,0 +1,9 @@
+
+PBS_scripts/    -- submitting the real jobs 
+
+bin/		-- possum,possum_sum,signal2image pulse 3dTcat,3drefit 
+variable/	-- motion, activation
+defaults/ 	-- brain, pulse, rf, mr
+
+
+possumTime.sh   -- used to test possum binary (3vols w/128procs default)

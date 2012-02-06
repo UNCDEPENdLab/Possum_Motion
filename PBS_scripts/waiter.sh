@@ -42,5 +42,5 @@ done
 # execute with qsub?
 set -xe
 possum_sum -i ${SimOutDir}/possum_ -o ${SimOutDir}/combined -n ${TotalCPUs} -v
-signal2image -i ${SimOutDir}/combined -p $PulseFile -o ${SimOutDir}/Brain_${simID}
+signal2image -i ${SimOutDir}/combined -a --homodyn -p $PulseFile -o ${SimOutDir}/Brain_${simID}
 set +xe

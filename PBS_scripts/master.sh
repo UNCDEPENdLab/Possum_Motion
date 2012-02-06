@@ -36,7 +36,7 @@ for active in $ActiveFiles; do
   # samve the prefix part for retreiving both .nii.gz and _time
   active=$(basename $active)
   active=${active%.nii.gz}
-  export ActivePrefix=$active;
+  export ActivePrefix="$active";
   active=${active#activation_}
 
   for motion in $MotionFiles; do
@@ -78,12 +78,15 @@ for active in $ActiveFiles; do
       # bash doesn't seem to care about going over array size
       for ((i=0; ${list[$i]} ; i+=$BlockedSize)); do 
 
-         #set -xe
-         #qsub -v simID=$simID,motionFile=$motionFile,activePrefix=$activePrefix $qsubScript ${list[@]:$i:$BlockedSize}
-         #set +xe
+         set -xe
+         ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
+         qsub -v simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
+         set +xe
 
          ##testing
-         $qsubScript ${list[@]:$i:$BlockedSize}
+
+         #export ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
+         #$qsubScript ${list[@]:$i:$BlockedSize}
          #echo queuer ${list[@]:$i:$BlockedSize}
 
       done

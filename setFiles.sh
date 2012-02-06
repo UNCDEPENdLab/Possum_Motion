@@ -47,12 +47,14 @@ function generateNumVol {
 
    #head  -n${volnum} $activationTimeFile > ${rundir}/activation_time  
    #Build timecourse
-   perl -le "print $TR*\$_ + $TR*4 for (0..$volnum-1)" >  $ActivationTimeFile
+   # need better uper bound
+   perl -le "print ${TR}*\$_ + ${TR_pulse}*4 for (0..$volnum-1)" >  $ActivationTimeFile
  
    echo "made: $ActivationTimeFile"
 
   
    # activation map w/vols from 0-199 needs to be 0-(volnum-1)
+   # should do more to set length 11*2.05 == 15*1.5     -- ish
    3dTcat \
     ${activationBaseFile}[0..$((($volnum-1)))] \
     -prefix $ActivationFile

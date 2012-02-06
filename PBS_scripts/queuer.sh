@@ -49,7 +49,8 @@ dircheck "SimOutDir"
 ### Possum for each job id ###
 ##############################
 
-for jobID in $@; do
+IFS=:
+for jobID in $ARGS; do
    
 
    # job comleltion check/parse requires the log file be named only a number
@@ -58,27 +59,8 @@ for jobID in $@; do
    let jobID--  #possum is zero based, the log structure is not!
 
    ### testing: just say we got here
-   echo 
-   echo possum                          \
-       --nproc=$TotalCPUs               \
-       --procid=$jobID                  \
-       -o $SimOutDir/possum_${jobID}    \
-       -m ${MotionFile}                 \
-       -i ${BrainFile}                  \
-       -x ${MRFile}                     \
-       -f ${RFFile}                     \
-       -p ${PulseFile}                  \
-       --activ4D=${ActivationFile}      \
-       --activt4D=${ActivationTimeFile} \
-        ">" $LogFile
-   echo
-
-
-   ### 
-
-   #ja
-
-   #possum                               \
+   #echo 
+   #echo possum                          \
    #    --nproc=$TotalCPUs               \
    #    --procid=$jobID                  \
    #    -o $SimOutDir/possum_${jobID}    \
@@ -89,8 +71,33 @@ for jobID in $@; do
    #    -p ${PulseFile}                  \
    #    --activ4D=${ActivationFile}      \
    #    --activt4D=${ActivationTimeFile} \
-   #      > $LogDir/possumlog_${simID}_${jobID} &
+   #     ">" $LogFile
+   #echo
 
 
-   #ja -t > $SCRATCH/log/${simID}_${jobID}.job.log
+   ### 
+
+   ja
+
+   possum                               \
+       --nproc=$TotalCPUs               \
+       --procid=$jobID                  \
+       -o $SimOutDir/possum_${jobID}    \
+       -m ${MotionFile}                 \
+       -i ${BrainFile}                  \
+       -x ${MRFile}                     \
+       -f ${RFFile}                     \
+       -p ${PulseFile}                  \
+       --activ4D=${ActivationFile}      \
+       --activt4D=${ActivationTimeFile} \
+         > $LogFile &
+
+
+   ja -chlst > $SCRATCH/log/${simID}_${jobID}.job.log
+
+   #-c command report
+   #-h Kilobytes of largest memory usage
+   #-l "additional info"
+   #-s summary report
+   #-t terminates accounting
 done

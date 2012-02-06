@@ -7,8 +7,8 @@
 #    
 #    o simID is unique to combination of 
 #       - motionFile  --- deterimined by '*motion'
-#       - activeFile  --- deterimined by 'activation_**.nii.gz
-#          o expects activation_**_time to exist also
+#       - activeFile  --- deterimined by 'act_**.nii.gz
+#          o expects act_**_time to exist also
 #
 #    o possum logs to   simID/logs/
 #    o possum output to simID/possum_
@@ -23,7 +23,7 @@ source environment.sh
 
 # e.g. activation_test_3vol.nii.gz
 #      contriubtes  'test_3vol' to simID
-ActiveFiles=($(ls $VARDIR/activation*.nii.gz))
+ActiveFiles=($(ls $VARDIR/act*.nii.gz))
 
 # e.g. zeromotion
 #      contributes  'zero'      to simID
@@ -89,7 +89,7 @@ for active in $ActiveFiles; do
       done
 
       echo waiter $simOutDir
-      ./waiter.sh 
+      #./waiter.sh 
 
    done
 

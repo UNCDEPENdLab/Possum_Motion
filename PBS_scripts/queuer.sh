@@ -5,7 +5,7 @@
 ###                 ###
 
 #PBS -l ncpus=16
-#PBS -l walltime=24:00:00
+#PBS -l walltime=5:00:00
 #dont use leading zeros
 #PBS -q batch
 
@@ -15,8 +15,9 @@
 #  o MotionFile
 #  o simID
 #
-source environment.sh
-source simIDVars.sh
+PBSSCRIPTDIR=$HOME/Possum-02-2012/PBS_scripts/
+source $PBSSCRIPTDIR/environment.sh
+source $PBSSCRIPTDIR/simIDVars.sh
 
 
 

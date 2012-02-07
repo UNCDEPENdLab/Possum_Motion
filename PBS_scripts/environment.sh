@@ -27,6 +27,16 @@ function die {
 ##################
 
 #export SCRATCH="./"    # REMOVE ME
+if [[ $HOSTNAME =~ skynet ]]; then
+   export SCRATCH="/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/scratch/"
+
+elif [[ $HOSTNAME =~ wallace ]]; then
+   export SCRATCH="$HOME/scratch"
+fi
+
+#where to store logs from ja (only for blacklight)
+QueLogDir="$SCRATCH/log/"
+
 
 # fsl env var
 export FSLOUTPUTTYPE=NIFTI_GZ
@@ -34,15 +44,17 @@ export FSLOUTPUTTYPE=NIFTI_GZ
 # put possum and tools in the path
 PATH="$PATH:$HOME/Possum-02-2012/bin"
 
- VARDIR="$HOME/Possum-02-2012/variables/"
-BASEDIR="$HOME/Possum-02-2012/defaults/"
+ROOTDIR=$HOME;
+[[ $HOSTNAME =~ skynet ]] && ROOTDIR="/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/"
+ VARDIR="$ROOTDIR/Possum-02-2012/variables/"
+BASEDIR="$ROOTDIR/Possum-02-2012/defaults/"
 #BASEDIR="/Users/michaelhallquist/Data_Analysis/rs-fcMRI_Motion/possum" #CHANGE ME! location of possum files
 #BASEDIR="/Volumes/Serena/possum_speedup_tests_xsede/" # change me!
 
 TotalCPUs=128
 
 # runs the BlockedSize (16) jobs
-scriptDir="$HOME/Possum-02-2012/PBS_scripts/"
+scriptDir="$ROOTDIR/Possum-02-2012/PBS_scripts/"
 qsubScript=$scriptDir/queuer.sh 
 
 [ -r "$qsubScript" ] || die  "cannot open queuer $qsubScript!"

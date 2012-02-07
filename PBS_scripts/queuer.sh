@@ -15,10 +15,16 @@
 #  o MotionFile
 #  o simID
 #
-PBSSCRIPTDIR=$HOME/Possum-02-2012/PBS_scripts/
+
+
+if [[ $HOSTNAME =~ skynet ]]; then
+   PBSSCRIPTDIR="/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/Possum-02-2012/PBS_scripts/"
+else
+   PBSSCRIPTDIR=$HOME/Possum-02-2012/PBS_scripts/
+fi
+
 source $PBSSCRIPTDIR/environment.sh
 source $PBSSCRIPTDIR/simIDVars.sh
-QueLogDir="$SCRATCH/log/"
 
 
 
@@ -80,7 +86,7 @@ for jobID in $ARGS; do
 
    ### 
 
-   ja
+   [[$HOSTNAME =~ blacklight ]] && ja
 
    possum                               \
        --nproc=$TotalCPUs               \
@@ -96,7 +102,7 @@ for jobID in $ARGS; do
          > $LogFile &
 
 
-   ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
+   [[$HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
 
    #-c command report
    #-h Kilobytes of largest memory usage

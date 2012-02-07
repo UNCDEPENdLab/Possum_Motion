@@ -31,6 +31,9 @@ MotionFiles=($(ls $VARDIR/*motion))
 echo "=> using ${#ActiveFiles[*]} Active Files"
 echo "=> using ${#MotionFiles[*]} Motion Files"
 
+echo "SCRACTC: $SCRATCH"
+echo "Afile:   $HOSTNAME"
+
 for active in $ActiveFiles; do
   # get only the interating bit of the name
   # samve the prefix part for retreiving both .nii.gz and _time

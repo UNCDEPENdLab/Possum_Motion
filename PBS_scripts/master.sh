@@ -19,7 +19,7 @@
 #
 
 # load TotalCPUs, blocked
-source environment.sh
+source $HOME/Possum-02-2012/PBS_scripts/environment.sh
 
 # e.g. activation_test_3vol.nii.gz
 #      contriubtes  'test_3vol' to simID

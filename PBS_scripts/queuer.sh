@@ -18,6 +18,7 @@
 PBSSCRIPTDIR=$HOME/Possum-02-2012/PBS_scripts/
 source $PBSSCRIPTDIR/environment.sh
 source $PBSSCRIPTDIR/simIDVars.sh
+QueLogDir="$SCRATCH/log/"
 
 
 
@@ -43,6 +44,7 @@ done
 
 #  check for log file, make if DNE
 dircheck "LogDir"
+dircheck "QueLogDir"
 dircheck "SimOutDir"
 
 
@@ -94,7 +96,7 @@ for jobID in $ARGS; do
          > $LogFile &
 
 
-   ja -chlst > $SCRATCH/log/${simID}_${jobID}.job.log
+   ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
 
    #-c command report
    #-h Kilobytes of largest memory usage

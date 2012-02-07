@@ -24,6 +24,7 @@ else
 fi
 
 source $PBSSCRIPTDIR/environment.sh
+echo $SCRATCH
 source $PBSSCRIPTDIR/simIDVars.sh
 
 
@@ -86,7 +87,7 @@ for jobID in $ARGS; do
 
    ### 
 
-   [[$HOSTNAME =~ blacklight ]] && ja
+   [[ $HOSTNAME =~ blacklight ]] && ja
 
    possum                               \
        --nproc=$TotalCPUs               \
@@ -102,7 +103,7 @@ for jobID in $ARGS; do
          > $LogFile &
 
 
-   [[$HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
+   [[ $HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
 
    #-c command report
    #-h Kilobytes of largest memory usage

@@ -30,7 +30,7 @@ function die {
 if [[ $HOSTNAME =~ skynet ]]; then
    export SCRATCH="/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/scratch/"
 
-elif [[ $HOSTNAME =~ wallace ]]; then
+elif [[ $HOSTNAME =~ wallace ]] || [[ $HOSTNAME =~ gromit ]] ; then
    export SCRATCH="$HOME/scratch"
 fi
 

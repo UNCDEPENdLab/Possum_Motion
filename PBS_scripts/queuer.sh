@@ -24,7 +24,6 @@ else
 fi
 
 source $PBSSCRIPTDIR/environment.sh
-echo $SCRATCH
 source $PBSSCRIPTDIR/simIDVars.sh
 
 
@@ -54,6 +53,14 @@ dircheck "LogDir"
 dircheck "QueLogDir"
 dircheck "SimOutDir"
 
+
+echo "SCRACTC: $SCRATCH"
+echo "LogDir:  $LogDir"
+echo "Jobs:    $ARGS"
+echo "Host:    $HOSTNAME"
+echo "SimID:   $simID"
+echo "Mfile:   $MotionFile"
+echo "Afile:   $ActivationFile"
 
 ##############################
 ### Possum for each job id ###
@@ -89,6 +96,7 @@ for jobID in $ARGS; do
 
    [[ $HOSTNAME =~ blacklight ]] && ja
 
+   set -x
    possum                               \
        --nproc=$TotalCPUs               \
        --procid=$jobID                  \
@@ -101,6 +109,7 @@ for jobID in $ARGS; do
        --activ4D=${ActivationFile}      \
        --activt4D=${ActivationTimeFile} \
          > $LogFile &
+   set +x
 
 
    [[ $HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
@@ -111,3 +120,8 @@ for jobID in $ARGS; do
    #-s summary report
    #-t terminates accounting
 done
+
+echo "forked jobs!"
+wait 
+
+echo "finished!"

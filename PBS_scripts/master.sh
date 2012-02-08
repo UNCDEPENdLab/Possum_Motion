@@ -19,7 +19,8 @@
 #
 
 # load TotalCPUs, blocked
-source $HOME/Possum-02-2012/PBS_scripts/environment.sh
+SCRIPTDIR="$HOME/Possum-02-2012/PBS_scripts/"
+source ${SCRIPTDIR}/environment.sh
 
 # e.g. activation_test_3vol.nii.gz
 #      contriubtes  'test_3vol' to simID
@@ -50,7 +51,7 @@ for active in $ActiveFiles; do
 
       # set simID and directories
       export simID="${active}_${motion}"
-      source simIDVars.sh
+      source ${SCRIPTDIR}/simIDVars.sh
 
       # check if brain exists
       if [ -r ${simOutDir}/Brain_${simID}_abs.nii.gz ]; then echo "skipping Brain_${simID}_abs.nii.gz exists";  continue; fi
@@ -81,15 +82,17 @@ for active in $ActiveFiles; do
       # bash doesn't seem to care about going over array size
       for ((i=0; ${list[$i]} ; i+=$BlockedSize)); do 
 
-         set -xe
          ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
+         set -xe
          qsub -v simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
          set +xe
 
          ##testing
 
          #export ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
-         #$qsubScript ${list[@]:$i:$BlockedSize}
+         #set -xe
+         #$qsubScript 
+         #set +xe
          #echo queuer ${list[@]:$i:$BlockedSize}
 
       done

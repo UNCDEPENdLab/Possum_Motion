@@ -11,5 +11,6 @@
 [ -n "$simID" ] || die "no simID!"
 
 SimOutDir="$SCRATCH/sim/$simID"
+simOutDir="$SCRATCH/sim/$simID"
    LogDir="$SimOutDir/logs"
 

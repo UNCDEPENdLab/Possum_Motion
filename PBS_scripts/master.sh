@@ -31,8 +31,8 @@ MotionFiles=($(ls $VARDIR/*motion))
 echo "=> using ${#ActiveFiles[*]} Active Files"
 echo "=> using ${#MotionFiles[*]} Motion Files"
 
-echo "SCRACTC: $SCRATCH"
-echo "Afile:   $HOSTNAME"
+echo "SCRATCH: $SCRATCH"
+echo "Host:    $HOSTNAME"
 
 for active in $ActiveFiles; do
   # get only the interating bit of the name
@@ -53,7 +53,7 @@ for active in $ActiveFiles; do
       source simIDVars.sh
 
       # check if brain exists
-      if [ -r ${simOutDir}/Brain_${simID}.nii.gz ]; then echo "skipping $simID. nii.gz exists";  continue; fi
+      if [ -r ${simOutDir}/Brain_${simID}_abs.nii.gz ]; then echo "skipping Brain_${simID}_abs.nii.gz exists";  continue; fi
 
 
       echo == Dispatching for $simID

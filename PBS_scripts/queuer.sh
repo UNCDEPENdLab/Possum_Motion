@@ -5,7 +5,7 @@
 ###                 ###
 
 #PBS -l ncpus=16
-#PBS -l walltime=5:00:00
+#PBS -l walltime=10:00:00
 #dont use leading zeros
 #PBS -q batch
 
@@ -122,6 +122,7 @@ for jobID in $ARGS; do
 done
 
 echo "forked jobs!"
-wait 
+
+time wait 
 
 echo "finished!"

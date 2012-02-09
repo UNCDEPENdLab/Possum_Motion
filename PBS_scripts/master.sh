@@ -18,6 +18,14 @@
 #    note: log/1 <=> --procid=0 <=> $simID/possum_0
 #
 
+# echo what qsub debug options are provided 
+# and give a chance to quit
+# o e.g. export DEBUGOPTS='-q debug -l ncpus=16 -l walltime=30:00'
+# maybe use read instead of sleep?
+echo "=> \$DEBUGOPTS: $DEBGOPTS"
+echo "   5 seconds to change your mind with interupt key"
+sleep 5
+
 # load TotalCPUs, blocked
 SCRIPTDIR="$HOME/Possum-02-2012/PBS_scripts/"
 source ${SCRIPTDIR}/environment.sh
@@ -84,7 +92,7 @@ for active in $ActiveFiles; do
 
          ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
          set -xe
-         qsub -v simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
+         qsub $DEBUGOPTS -v simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
          set +xe
 
          ##testing

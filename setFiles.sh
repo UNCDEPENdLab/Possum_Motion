@@ -57,10 +57,12 @@ function generateNumVol {
      # extend last motion until end if file is shorter than num TRs (e.g. zeromotion)
 
      echo "using $volnum of volumes inc. by $TR for motion of $motionSID"
+     # MOTION STARTS AFTER DUMMY
      perl -slane 'BEGIN{$n=0;@l=(); 
-                  sub pline{ print join("  ",((shift) - 1)*$ENV{TR},@l)  }} 
+                  # motion starts at 0+offset, goes to volnum-1 in increments of TR (1.5)
+                  sub pline{ print join("  ", ((shift) - 1)*$ENV{TR}+ 4*$ENV{TR_pulse} , @l )  }} 
                   @l=@F[1...$#F]; 
-                   pline($.) if $. < $ENV{volnum}; 
+                  pline($.) if $. <= $ENV{volnum}; 
                   $n=$.; 
                   END{
                      pline($n) while(++$n<=$ENV{volnum})
@@ -73,26 +75,18 @@ function generateNumVol {
    if [ ! -r $ActivationFile ] || [ ! -r $ActivationTimeFile ]; then
 
      
-      # activation map w/vols from 0-199 needs to be 0-(volnum-1)
-      # realTR*realVolnum         = pulseTR*(correctedVol - 4 junk)
-      # realTR*realVolnum/pulseTR = (correctedVol - 4 junk)
-      # 1.5*15/2.05  + 4 = 14.975 => 15
-      # 1.5*154/2.05 + 4 =        => 117
-      # 1.5*200/2.05 + 4 = 150.3  => 150
-      # $TR*$volnum/$TR_pulse + 4
-      corVolNum=$(echo "$TR*$volnum/$TR_pulse + 4 + .5" |bc -l); 
-      corVolNum=${corVolNum%.*} # + .5 %.* == round
       
-      echo "using $corVolNum of volumes inc by $TR starting at ${TR_pulse}*4 for activation"
+      # activation map w/vols from 0-199 needs to be 0-(volnum-1)
       # start activation time offset by 4 TR_pulse
       # print time for each step of corVolNum as steps of TR 
       # *** Should this be -5 instead of -1 ???? -- the first 4 are junk
-      perl -le "print ${TR}*\$_ + ${TR_pulse}*4 for (0..$corVolNum-1)" >  $ActivationTimeFile
+      perl -le "print ${TR}*\$_ + 4*${TR_pulse} for (0..$volnum-1)" >  $ActivationTimeFile
     
       echo "made: $ActivationTimeFile"
 
+      #200 not corrected
       3dTcat \
-       ${activationBaseFile}[0..$((($corVolNum-1)))] \
+       ${activationBaseFile}[0..$((($volnum-1)))] \
        -prefix $ActivationFile
      
       # and make TR what we want
@@ -105,11 +99,25 @@ function generateNumVol {
 
   PulseOut="${BASEDIR}/pulse_${volnum}"
   if [ ! -r $PulseOut ]; then
+
+      # actual experment is 1.5*200
+      # but pulse has to be created with TR=2.05 so numvols must be corrected
+
+      # realTR*realVolnum         = pulseTR*(correctedVol - 4 junk)
+      # realTR*realVolnum/pulseTR = (correctedVol - 4 junk)
+      # 1.5*15/2.05  + 4 = 14.975 => 15
+      # 1.5*154/2.05 + 4 =        => 117
+      # 1.5*200/2.05 + 4 = 150.3  => 150
+      # $TR*$volnum/$TR_pulse + 4
+      corVolNum=$(echo "$TR*$volnum/$TR_pulse + 4 + .5" |bc -l); 
+      corVolNum=${corVolNum%.*} # + .5 %.* == round
+      echo "using $corVolNum of volumes with ${TR_pulse} for pulse"
+
       # build pulse
       pulse -i ${BrainFile} -o $PulseOut  --te=0.029 --tr=${TR_pulse} \
        --trslc=0.066 --nx=58 --ny=58 --dx=0.0032 --dy=0.0032 \
        --maxG=0.04 --riset=0.0002 --bw=156252 \
-       --numvol=$volnum --numslc=31 --slcthk=0.0039 --zstart=0.038 \
+       --numvol=$corVolNum --numslc=31 --slcthk=0.0039 --zstart=0.038 \
        --seq=epi --slcdir=z+ --readdir=x+ \
        --phasedir=y+ --gap=0.0 -v --cover=100 --angle=85 > logs/pulseSetup 2>&1
 
@@ -120,7 +128,7 @@ function generateNumVol {
 #set 
 export motionBaseFile="defaults/empiricalMotion/10761.wU.dfile"
 
-export         volnum=150
+export         volnum=200
 
 export activationBaseFile=defaults/10653_POSSUM4D_bb244_fullFreq_RPI.nii.gz
 

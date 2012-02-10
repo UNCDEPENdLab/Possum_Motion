@@ -48,6 +48,11 @@ esac
 # load TotalCPUs, blocked
 source ${SCRIPTDIR}/environment.sh || exit
 
+
+# if jobsize is defined, make it the new blockedsize 
+# i.e. ignore ncpus defined in queuer.sh
+[ -n "$JOBSIZE" ] && BlockedSize=$JOBSIZE
+
 # e.g. activation_test_3vol.nii.gz
 #      contriubtes  'test_3vol' to simID
 ActiveFiles=($(ls $VARDIR/act*.nii.gz))
@@ -66,11 +71,11 @@ echo -n "REALLYRUN:   "; [ "$REALLYRUN" == "1" ] && echo "YES" || echo "no"
 echo    "QSUBCOMMAND: $QSUBCOMMAND"
 echo    "Host:        $HOSTNAME"
 echo    "SCRATCH:     $SCRATCH"
+echo    "BlockedSize: $BlockedSize"
 echo    "using"
 echo    "=>           ${BrainFile}"
 echo    "=>           ${MRFile}"
 echo    "=>           ${RFFile}"
-echo    "=>           ${PulseFile}"
 echo    "=> ${#ActiveFiles[*]} Active Files: ${ActiveFiles[*]}"
 echo    "=> ${#MotionFiles[*]} Motion Files: ${MotionFiles[*]}"
 echo 
@@ -96,7 +101,7 @@ for active in ${ActiveFiles[@]}; do
       export MotionFile=$motion
       motion=$(basename ${motion%motion})
 
-      echo "==> $active and $motion"
+
       if [ $expectedVols != ${motion##*_} ]; then
          echo "*** active has $expectedVols vols but motion has ${motion##*_}; skipping combination"
          continue
@@ -110,7 +115,13 @@ for active in ${ActiveFiles[@]}; do
       if [ -r ${simOutDir}/Brain_${simID}_abs.nii.gz ]; then echo "skipping Brain_${simID}_abs.nii.gz exists";  continue; fi
 
 
-      echo == Dispatching for $simID
+      # do this again to get the correct pulse file
+      source ${SCRIPTDIR}/environment.sh || exit
+      echo "==> Pulse:       ${PulseFile}"
+      echo "==> Activation:  $active"
+      echo "==> Motion:      $motion"
+      echo "==> simlationID: $simID"
+      echo
 
 
       # what runs need to be made
@@ -129,7 +140,7 @@ for active in ${ActiveFiles[@]}; do
                                  perl -lne 'print $1 if m/< (\d+)/'    \
                               ))
       
-      echo === have ${#list[@]} jobs to run
+      echo -e "\n===>have ${#list[@]} jobs to run\n"
 
       # for every %16 items on the list, list the next 16
       # bash doesn't seem to care about going over array size
@@ -137,27 +148,28 @@ for active in ${ActiveFiles[@]}; do
 
          export ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
 
+
          #only actually run if we've called with "REALLYRUN=1 ./master.sh"
          if [ "$REALLYRUN" == "1" ]; then 
          set -xe
-            $QSUBCOMMAND -v REALLYRUN=1,simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
+            $QSUBCOMMAND -N "pos_$expectedVols-$i" -v REALLYRUN=1,simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
          set +xe
 	 # otherwise run qsubscript 
 	 # which assumes a mock run
 	 # and only echos what it would do
          else
-            echo $qsubScript  $ARGS
+            echo $qsubScript $ARGS
          fi
 
       done
 
 
-      echo "NOT launching waiter.sh. Do it yourself"
-      echo "  will need mot file and simID"
+      echo "   NOT launching waiter.sh. Do it yourself"
+      echo "   will need mot file and simID"
       echo "   MotionFile=$MotionFile"
       echo "   simID=$simID"
-      echo $SCRIPTDIR/waiter.sh
-      echo "	out to $simOutDir"
+      echo "   $SCRIPTDIR/waiter.sh"
+      echo "        out to $simOutDir"
       #./waiter.sh 
 
    done

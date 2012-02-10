@@ -1,0 +1,10 @@
+3dvolreg2motion.R -- copy of code emailed from Michael
+
+files from
+skynet:/Volumes/Serena/Rest/Subjects/{10871,10776}/mni_washU/dfile.1D
+
+copied like:
+for f in {10871,10776}/mni_washU/dfile.1D; do cp $f ${f%/*/*}.wU.dfile; done
+
+
+

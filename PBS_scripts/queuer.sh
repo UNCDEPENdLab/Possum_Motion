@@ -78,7 +78,11 @@ for jobID in $ARGS; do
    # run or print out what we would run
    if [ "$REALLYRUN" == "1" ]; then
 
-      [[ $HOSTNAME =~ blacklight ]] && ja
+      #[[ $HOSTNAME =~ blacklight ]] && ja
+      # hostname may not be blacklight but anyway
+      # don't really care what the host name is
+      # just that it has ja
+      which ja && ja
 
       set -x
       possum                               \
@@ -96,7 +100,8 @@ for jobID in $ARGS; do
       set +x
 
 
-      [[ $HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
+      #[[ $HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
+      which ja &&  ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
 
       #-c command report
       #-h Kilobytes of largest memory usage

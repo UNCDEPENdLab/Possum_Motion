@@ -6,6 +6,15 @@
 #    REALLYRUN=1   will actually pass to qsub and possum will run instead of echo the command
 #    QSUBCOMMAND   could be e.g. 'echo qsub' or 'qsub -q debug'
 #
+#
+#    should execute in 'runlog' directory so output is orginized
+#
+#    EXAMPLE:
+#
+#    mkdir -p ~/Possum-02-2012/runlog/$(date +%F) && cd $_
+#    REALLYRUN=1 ../../PBS_Scripts/master.sh
+#
+#
 #    o environment is read from environment.sh
 #    -- BatchedSize is defined by #PBS -l nproc= in queue.sh (probably always 16)
 #    
@@ -14,16 +23,19 @@
 #       - activeFile  --- deterimined by 'act_**.nii.gz
 #          o expects act_**_time to exist also
 #
-#    o possum logs to   simID/logs/
-#    o possum output to simID/possum_
-#    o combined outs to simID/combined
-#    o final nii as     simID/Brain_${simID}.nii.gz
+#    o possum logs to   scratch/sim/simID/logs/
+#    o possum output to scratch/sim/simID/possum_
+#    o combined outs to scratch/sim/simID/combined
+#    o final nii as     scratch/sim/simID/Brain_${simID}.nii.gz
 #
 #    note: log/1 <=> --procid=0 <=> $simID/possum_0
 #
 
 # if we don't say to do anything special, use qsub
 [ -z "$QSUBCOMMAND" ] && QSUBCOMMAND='qsub'
+
+# would like to be running in a dir for collecting logs
+[[ $(pwd) =~ runlog ]] || echo "Think about running me in a runlog dir" 
 
 # load TotalCPUs, blocked
 SCRIPTDIR="$HOME/Possum-02-2012/PBS_scripts/"

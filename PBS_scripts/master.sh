@@ -80,19 +80,27 @@ read
 #echo    "   5 seconds to change your mind with interupt key"
 #sleep 5
 
-for active in $ActiveFiles; do
+for active in ${ActiveFiles[@]}; do
   # get only the interating bit of the name
-  # samve the prefix part for retreiving both .nii.gz and _time
+  # save the prefix part for retreiving both .nii.gz and _time
   active=$(basename $active)
   active=${active%.nii.gz}
   export ActivePrefix="$active";
-  active=${active#activation_}
+  active=${active#act_}
+  
+  expectedVols=${active#*_}
 
-  for motion in $MotionFiles; do
+  for motion in ${MotionFiles[@]}; do
+  # e.g. 10761_1.5_150motion
 
       export MotionFile=$motion
-      motion=$(basename $motion)
-      motion=${motion%motion}
+      motion=$(basename ${motion%motion})
+
+      echo "==> $active and $motion"
+      if [ $expectedVols != ${motion##*_} ]; then
+         echo "*** active has $expectedVols vols but motion has ${motion##*_}; skipping combination"
+         continue
+      fi
 
       # set simID and directories
       export simID="${active}_${motion}"
@@ -130,25 +138,26 @@ for active in $ActiveFiles; do
          export ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
 
          #only actually run if we've called with "REALLYRUN=1 ./master.sh"
-         set -xe
          if [ "$REALLYRUN" == "1" ]; then 
+         set -xe
             $QSUBCOMMAND -v REALLYRUN=1,simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
+         set +xe
 	 # otherwise run qsubscript 
 	 # which assumes a mock run
 	 # and only echos what it would do
          else
-            $qsubScript 
+            echo $qsubScript  $ARGS
          fi
-         set +xe
 
       done
 
+
       echo "NOT launching waiter.sh. Do it yourself"
-      echo "need mot file and simID"
-      echo "MotionFile=$MotionFile"
-      echo "simID=$simID"
+      echo "  will need mot file and simID"
+      echo "   MotionFile=$MotionFile"
+      echo "   simID=$simID"
       echo $SCRIPTDIR/waiter.sh
-      echo "\tout to $simOutDir"
+      echo "	out to $simOutDir"
       #./waiter.sh 
 
    done

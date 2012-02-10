@@ -32,11 +32,31 @@ function generateNumVol {
   # each line corresponds to one volume step in time
   # replace TR intervals with new ones
   
+  #what should motionSID be?
 
-  MotionOut="${VARDIR}/${MotionPrefix}motion"
-  if [ ! -r $MotionOut ]; then
+  motionOut="${VARDIR}/${MotionPrefix}motion"
+
+  if [ ! -r $motionOut ]; then
+     
+      # motion file not in the right format
+      if [[ $motionBaseFile =~ dfile ]]; then
+         dfile=$motionBaseFile
+         empDir="defaults/empiricalMotion"
+
+         #update motion base
+         motionBaseFile=$empDir/${motionSID}motion
+         $empDir/convertDfileToPossum.R $dfile $motionBaseFile
+
+         echo "converted motion to $motionBaseFile"
+      fi
+      
+
      # start with motion at 0
+     # use actual volnum
+     # increment by actual TR not simulation TR (TR_pulse)
      # extend last motion until end if file is shorter than num TRs (e.g. zeromotion)
+
+     echo "using $volnum of volumes inc. by $TR for motion of $motionSID"
      perl -slane 'BEGIN{$n=0;@l=(); 
                   sub pline{ print join("  ",((shift) - 1)*$ENV{TR},@l)  }} 
                   @l=@F[1...$#F]; 
@@ -44,25 +64,35 @@ function generateNumVol {
                   $n=$.; 
                   END{
                      pline($n) while(++$n<=$ENV{volnum})
-                  }' $motionBaseFile > $MotionOut
+                  }' $motionBaseFile > $motionOut
 
-      echo "made: $MotionOut"
+      echo "made: $motionOut"
    fi
 
    # if either activation file is missing, make both
    if [ ! -r $ActivationFile ] || [ ! -r $ActivationTimeFile ]; then
-      #head  -n${volnum} $activationTimeFile > ${rundir}/activation_time  
-      #Build timecourse
-      # need better uper bound
-      perl -le "print ${TR}*\$_ + ${TR_pulse}*4 for (0..$volnum-1)" >  $ActivationTimeFile
-    
-      echo "made: $ActivationTimeFile"
 
      
       # activation map w/vols from 0-199 needs to be 0-(volnum-1)
-      # should do more to set length 11*2.05 == 15*1.5     -- ish
+      # realTR*realVolnum         = pulseTR*(correctedVol - 4 junk)
+      # realTR*realVolnum/pulseTR = (correctedVol - 4 junk)
+      # 1.5*15/2.05  + 4 = 14.975 => 15
+      # 1.5*154/2.05 + 4 =        => 117
+      # 1.5*200/2.05 + 4 = 150.3  => 150
+      # $TR*$volnum/$TR_pulse + 4
+      corVolNum=$(echo "$TR*$volnum/$TR_pulse + 4 + .5" |bc -l); 
+      corVolNum=${corVolNum%.*} # + .5 %.* == round
+      
+      echo "using $corVolNum of volumes inc by $TR starting at ${TR_pulse}*4 for activation"
+      # start activation time offset by 4 TR_pulse
+      # print time for each step of corVolNum as steps of TR 
+      # *** Should this be -5 instead of -1 ???? -- the first 4 are junk
+      perl -le "print ${TR}*\$_ + ${TR_pulse}*4 for (0..$corVolNum-1)" >  $ActivationTimeFile
+    
+      echo "made: $ActivationTimeFile"
+
       3dTcat \
-       ${activationBaseFile}[0..$((($volnum-1)))] \
+       ${activationBaseFile}[0..$((($corVolNum-1)))] \
        -prefix $ActivationFile
      
       # and make TR what we want
@@ -76,7 +106,7 @@ function generateNumVol {
   PulseOut="${BASEDIR}/pulse_${volnum}"
   if [ ! -r $PulseOut ]; then
       # build pulse
-      pulse -i ${BrainFile} -o $PulseOut  --te=0.029 --tr=2.05 \
+      pulse -i ${BrainFile} -o $PulseOut  --te=0.029 --tr=${TR_pulse} \
        --trslc=0.066 --nx=58 --ny=58 --dx=0.0032 --dy=0.0032 \
        --maxG=0.04 --riset=0.0002 --bw=156252 \
        --numvol=$volnum --numslc=31 --slcthk=0.0039 --zstart=0.038 \
@@ -88,25 +118,50 @@ function generateNumVol {
 }
 
 #set 
-export       TR=1.5
-export TR_pulse=2.05
-export   volnum=15
+export motionBaseFile="defaults/empiricalMotion/10761.wU.dfile"
 
-#zero motion filse
-#export motionBaseFile=defaults/zeromotion
-
-# subject 10871
-# created from dfile via defaults/empiricalMotion/convertDfileToPossum.R
-export motionBaseFile=defaults/empiricalMotion/10871motion
+export         volnum=150
 
 export activationBaseFile=defaults/10653_POSSUM4D_bb244_fullFreq_RPI.nii.gz
 
+export      SCRIPTDIR="$HOME/Possum-02-2012"
+
+### PAST
+#zero motion filse
+#export motionBaseFile=defaults/zeromotion
+# subject 10871
+# created from dfile via defaults/empiricalMotion/convertDfileToPossum.R
+#export motionBaseFile=defaults/empiricalMotion/10871motion
+
+
+
+
+####
+# below is not likely to change
+####
+
+#export MotionPrefix
+case $motionBaseFile in
+*.dfile)
+    # maybe want to keep e.g. .wU instead of clear 
+    # everything after .
+    motionSID="$(basename ${motionBaseFile%%.*} )" ;;
+ *motion)
+    motionSID="$(basename ${motionBaseFile} motion)";;
+ *)
+    echo "ERROR: What kind of motionBaseFile is $motionBaseFile?"
+    exit 1;;
+esac
+  
+
+export           TR=1.5   #should be experimental value
+export     TR_pulse=2.05  #changing me requires adjusting pulse params
+
+export MotionPrefix="${motionSID}_${TR}_${volnum}"
 export ActivePrefix="act${TR}_${volnum}"
-export MotionPrefix="$(basename $motionBaseFile motion)_${TR}_${volnum}"
 
-## load BrainFile ActivationFile activationTimeFile
-source $HOME/Possum-02-2012/PBS_scripts/environment.sh
-
+## load BrainFile ActivationFile ActivationTimeFile
+source ${SCRIPTDIR}/PBS_scripts/environment.sh
 
 generateNumVol 2>&1 | tee -a logs/makefiles.log
 

@@ -1,5 +1,5 @@
-3dvolreg2motion.R -- copy of code emailed from Michael
-
+convertDfileToPossum.R  -- copy of code emailed from Michael
+                         convertDfileToPossum("10776.dfile_WashU.1D", 1.5, "10776motion")
 files from
 skynet:/Volumes/Serena/Rest/Subjects/{10871,10776}/mni_washU/dfile.1D
 

@@ -1,7 +1,7 @@
 
 PBS_scripts/    -- submitting the real jobs 
 
-setFiles.sh	-- use numvols,TR, base motion and activation files
+setFiles.sh	-- use numvols,TR, base motion and base activation files
 		    to create pulse, activation, and motion files for possum
 
 bin/		-- possum,possum_sum,signal2image pulse 3dTcat,3drefit 
@@ -9,3 +9,6 @@ variable/	-- motion, activation
 defaults/ 	-- brain, pulse, rf, mr
 logs/		-- pulseSetup and makefiles log
 
+
+basefiles.ls    -- list of files used by possum but not tracked by git
+                -- rsync -av --files-from basefiles.ls ./ foranw@blacklight:~/Possum-02-2012/

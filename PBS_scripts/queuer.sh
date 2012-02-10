@@ -75,50 +75,53 @@ for jobID in $ARGS; do
 
    let jobID--  #possum is zero based, the log structure is not!
 
-   ### testing: just say we got here
-   #echo 
-   #echo possum                          \
-   #    --nproc=$TotalCPUs               \
-   #    --procid=$jobID                  \
-   #    -o $SimOutDir/possum_${jobID}    \
-   #    -m ${MotionFile}                 \
-   #    -i ${BrainFile}                  \
-   #    -x ${MRFile}                     \
-   #    -f ${RFFile}                     \
-   #    -p ${PulseFile}                  \
-   #    --activ4D=${ActivationFile}      \
-   #    --activt4D=${ActivationTimeFile} \
-   #     ">" $LogFile
-   #echo
+   # run or print out what we would run
+   if [ "$REALLYRUN" == "1" ]; then
+
+      [[ $HOSTNAME =~ blacklight ]] && ja
+
+      set -x
+      possum                               \
+          --nproc=$TotalCPUs               \
+          --procid=$jobID                  \
+          -o $SimOutDir/possum_${jobID}    \
+          -m ${MotionFile}                 \
+          -i ${BrainFile}                  \
+          -x ${MRFile}                     \
+          -f ${RFFile}                     \
+          -p ${PulseFile}                  \
+          --activ4D=${ActivationFile}      \
+          --activt4D=${ActivationTimeFile} \
+            > $LogFile &
+      set +x
 
 
-   ### 
+      [[ $HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
 
-   [[ $HOSTNAME =~ blacklight ]] && ja
+      #-c command report
+      #-h Kilobytes of largest memory usage
+      #-l "additional info"
+      #-s summary report
+      #-t terminates accounting
+   else
+      ## testing: just say we got here
+      echo 
+      echo possum                          \
+          --nproc=$TotalCPUs               \
+          --procid=$jobID                  \
+          -o $SimOutDir/possum_${jobID}    \
+          -m ${MotionFile}                 \
+          -i ${BrainFile}                  \
+          -x ${MRFile}                     \
+          -f ${RFFile}                     \
+          -p ${PulseFile}                  \
+          --activ4D=${ActivationFile}      \
+          --activt4D=${ActivationTimeFile} \
+           ">" $LogFile
+      echo
+   fi
 
-   set -x
-   possum                               \
-       --nproc=$TotalCPUs               \
-       --procid=$jobID                  \
-       -o $SimOutDir/possum_${jobID}    \
-       -m ${MotionFile}                 \
-       -i ${BrainFile}                  \
-       -x ${MRFile}                     \
-       -f ${RFFile}                     \
-       -p ${PulseFile}                  \
-       --activ4D=${ActivationFile}      \
-       --activt4D=${ActivationTimeFile} \
-         > $LogFile &
-   set +x
 
-
-   [[ $HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
-
-   #-c command report
-   #-h Kilobytes of largest memory usage
-   #-l "additional info"
-   #-s summary report
-   #-t terminates accounting
 done
 
 echo "forked jobs!"

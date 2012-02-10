@@ -2,6 +2,10 @@
 
 # Master script, dispatches qsub in blocks of 16 (lower number gets priority in queueing?)
 # 
+#    use REALLYRUN and QSUBCOMMAND for finer control over what happens
+#    REALLYRUN=1   will actually pass to qsub and possum will run instead of echo the command
+#    QSUBCOMMAND   could be e.g. 'echo qsub' or 'qsub -q debug'
+#
 #    o environment is read from environment.sh
 #    -- BatchedSize is defined by #PBS -l nproc= in queue.sh (probably always 16)
 #    
@@ -18,13 +22,8 @@
 #    note: log/1 <=> --procid=0 <=> $simID/possum_0
 #
 
-# echo what qsub debug options are provided 
-# and give a chance to quit
-# o e.g. export DEBUGOPTS='-q debug -l ncpus=16 -l walltime=30:00'
-# maybe use read instead of sleep?
-echo "=> \$DEBUGOPTS: $DEBGOPTS"
-echo "   5 seconds to change your mind with interupt key"
-sleep 5
+# if we don't say to do anything special, use qsub
+[ -z "$QSUBCOMMAND" ] && QSUBCOMMAND='qsub'
 
 # load TotalCPUs, blocked
 SCRIPTDIR="$HOME/Possum-02-2012/PBS_scripts/"
@@ -37,11 +36,28 @@ ActiveFiles=($(ls $VARDIR/act*.nii.gz))
 # e.g. zeromotion
 #      contributes  'zero'      to simID
 MotionFiles=($(ls $VARDIR/*motion))
-echo "=> using ${#ActiveFiles[*]} Active Files"
-echo "=> using ${#MotionFiles[*]} Motion Files"
 
-echo "SCRATCH: $SCRATCH"
-echo "Host:    $HOSTNAME"
+
+# echo settings and give a chance to quit
+# externally set options
+# o e.g. export QSUBCOMMAND='echo qsub'
+# o e.g. export QSUBCOMMAND='qsub -q debug -l ncpus=16 -l walltime=30:00'
+# maybe use read instead of sleep?
+echo "REALLYRUN?   $REALLYRUN"
+echo "QSUBCOMMAND: $QSUBCOMMAND"
+echo "Host:        $HOSTNAME"
+echo "SCRATCH:     $SCRATCH"
+echo "using"
+echo "=>           ${BrainFile}"
+echo "=>           ${MRFile}"
+echo "=>           ${RFFile}"
+echo "=>           ${PulseFile}"
+echo "=> ${#ActiveFiles[*]} Active Files: ${ActiveFiles[*]}"
+echo "=> ${#MotionFiles[*]} Motion Files: ${MotionFiles[*]}"
+echo 
+echo
+echo "   5 seconds to change your mind with interupt key"
+sleep 5
 
 for active in $ActiveFiles; do
   # get only the interating bit of the name
@@ -90,14 +106,19 @@ for active in $ActiveFiles; do
       # bash doesn't seem to care about going over array size
       for ((i=0; ${list[$i]} ; i+=$BlockedSize)); do 
 
-         ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
+         export ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
+
+         #only actually run if we've called with "REALLYRUN=1 ./master.sh"
          set -xe
-         qsub $DEBUGOPTS -v simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
+         if [ "$REALLYRUN" == "1" ]; then 
+            $QSUBCOMMAND -v REALLYRUN=1,simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
+         else
+            $qsubScript 
+         fi
          set +xe
 
          ##testing
 
-         #export ARGS=$(echo ${list[@]:$i:$BlockedSize}| tr ' ' ':')
          #set -xe
          #$qsubScript 
          #set +xe

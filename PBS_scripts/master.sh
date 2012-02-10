@@ -35,11 +35,18 @@
 [ -z "$QSUBCOMMAND" ] && QSUBCOMMAND='qsub'
 
 # would like to be running in a dir for collecting logs
-[[ $(pwd) =~ runlog ]] || echo "Think about running me in a runlog dir" 
+[[ $(pwd) =~ runlog ]] || echo -e "\n** Think about running me in a runlog dir\n" 
+
+case "$HOSTNAME" in 
+    *blacklight*|*wallace*|*gromit*)
+	SCRIPTDIR="$HOME/Possum-02-2012/PBS_scripts/" ;;
+    *)
+	SCRIPTDIR="ERROR" ;;
+esac
+
 
 # load TotalCPUs, blocked
-SCRIPTDIR="$HOME/Possum-02-2012/PBS_scripts/"
-source ${SCRIPTDIR}/environment.sh
+source ${SCRIPTDIR}/environment.sh || exit
 
 # e.g. activation_test_3vol.nii.gz
 #      contriubtes  'test_3vol' to simID
@@ -55,21 +62,23 @@ MotionFiles=($(ls $VARDIR/*motion))
 # o e.g. export QSUBCOMMAND='echo qsub'
 # o e.g. export QSUBCOMMAND='qsub -q debug -l ncpus=16 -l walltime=30:00'
 # maybe use read instead of sleep?
-echo "REALLYRUN?   $REALLYRUN"
-echo "QSUBCOMMAND: $QSUBCOMMAND"
-echo "Host:        $HOSTNAME"
-echo "SCRATCH:     $SCRATCH"
-echo "using"
-echo "=>           ${BrainFile}"
-echo "=>           ${MRFile}"
-echo "=>           ${RFFile}"
-echo "=>           ${PulseFile}"
-echo "=> ${#ActiveFiles[*]} Active Files: ${ActiveFiles[*]}"
-echo "=> ${#MotionFiles[*]} Motion Files: ${MotionFiles[*]}"
+echo -n "REALLYRUN:   "; [ "$REALLYRUN" == "1" ] && echo "YES" || echo "no"
+echo    "QSUBCOMMAND: $QSUBCOMMAND"
+echo    "Host:        $HOSTNAME"
+echo    "SCRATCH:     $SCRATCH"
+echo    "using"
+echo    "=>           ${BrainFile}"
+echo    "=>           ${MRFile}"
+echo    "=>           ${RFFile}"
+echo    "=>           ${PulseFile}"
+echo    "=> ${#ActiveFiles[*]} Active Files: ${ActiveFiles[*]}"
+echo    "=> ${#MotionFiles[*]} Motion Files: ${MotionFiles[*]}"
 echo 
 echo
-echo "   5 seconds to change your mind with interupt key"
-sleep 5
+echo    "Intrupt to quit, anykey to proceed"
+read
+#echo    "   5 seconds to change your mind with interupt key"
+#sleep 5
 
 for active in $ActiveFiles; do
   # get only the interating bit of the name
@@ -124,21 +133,22 @@ for active in $ActiveFiles; do
          set -xe
          if [ "$REALLYRUN" == "1" ]; then 
             $QSUBCOMMAND -v REALLYRUN=1,simID=$simID,MotionFile=$MotionFile,ActivePrefix=$ActivePrefix,ARGS=$ARGS $qsubScript 
+	 # otherwise run qsubscript 
+	 # which assumes a mock run
+	 # and only echos what it would do
          else
             $qsubScript 
          fi
          set +xe
 
-         ##testing
-
-         #set -xe
-         #$qsubScript 
-         #set +xe
-         #echo queuer ${list[@]:$i:$BlockedSize}
-
       done
 
-      echo waiter $simOutDir
+      echo "NOT launching waiter.sh. Do it yourself"
+      echo "need mot file and simID"
+      echo "MotionFile=$MotionFile"
+      echo "simID=$simID"
+      echo $SCRIPTDIR/waiter.sh
+      echo "\tout to $simOutDir"
       #./waiter.sh 
 
    done

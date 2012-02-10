@@ -1,7 +1,9 @@
 #!/usr/bin/env sh
 
 # combine all of possums outputs
-#   o LogDir / TotalCPUs as jobID -> LogFile 
+#   o explictly needs simID and MotionFile (for numvols for PulseFile) passed in
+#   o in $LogDir there are $TotalCPU num files
+#       -- if each has 'possum finished' brain is read to be created 
 #
 #   -            jobid=1,   procid=0,   output=possum_0
 #   -          jobid=128, procid=127, output=possum_127
@@ -33,7 +35,6 @@ while sleep 3000; do
   
   # cannot do above, last log might be created before first!
   # instead count all the files matching and compare to total
-  # UNTESTED
   [ "$(grep -l '^Possum finished generating' $LogDir/* |wc -l)" -ge $TotalCPUs ] && break
 
 done

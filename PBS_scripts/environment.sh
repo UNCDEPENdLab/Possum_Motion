@@ -61,6 +61,10 @@ qsubScript=$scriptDir/queuer.sh
 
 # number to run in qsub, defined by queuer
 BlockedSize=$(perl -ne 'print $1 if /^#PBS\s+-l\s+ncpus=(\d+)/' $qsubScript) 
+
+# if jobsize is defined, make it the new blockedsize 
+[ -n "$JOBSIZE" ] && BlockedSize=$JOBSIZE
+
 [ -n "$BlockedSize" ] || die  "missing #PBS -l ncpus!"
 
 

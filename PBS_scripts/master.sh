@@ -4,7 +4,8 @@
 # 
 #    use REALLYRUN and QSUBCOMMAND for finer control over what happens
 #    REALLYRUN=1   will actually pass to qsub and possum will run instead of echo the command
-#    QSUBCOMMAND   could be e.g. 'echo qsub' or 'qsub -q debug'
+#    QSUBCOMMAND   could be e.g. 'echo qsub'  'qsub -q debug'  or 'qsub -h' (for wallace)
+#    JOBSIZE       override number of jobs sent to each queuer.sh instace (for wallace)
 #
 #
 #    should execute in 'runlog' directory so output is orginized
@@ -48,10 +49,6 @@ esac
 # load TotalCPUs, blocked
 source ${SCRIPTDIR}/environment.sh || exit
 
-
-# if jobsize is defined, make it the new blockedsize 
-# i.e. ignore ncpus defined in queuer.sh
-[ -n "$JOBSIZE" ] && BlockedSize=$JOBSIZE
 
 # e.g. activation_test_3vol.nii.gz
 #      contriubtes  'test_3vol' to simID
@@ -121,6 +118,7 @@ for active in ${ActiveFiles[@]}; do
       echo "==> Activation:  $active"
       echo "==> Motion:      $motion"
       echo "==> simlationID: $simID"
+      echo "==> BlockedSize: $BlockedSize"
       echo
 
 

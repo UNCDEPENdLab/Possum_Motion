@@ -125,7 +125,9 @@ for jobID in $ARGS; do
 done
 
 echo "forked jobs!"
+date
 
 time wait 
 
 echo "finished!"
+date

@@ -133,7 +133,7 @@ for active in ${ActiveFiles[@]}; do
       [ -d $LogDir ] && list=($(diff                                   \
                               <(seq 1 $TotalCPUs)                      \
                               <(grep -l '^Possum finished' ${LogDir}/* |
-                                 xargs basename                        |
+                                 xargs -n1 basename                    |
                                  sort -n)                              | 
                                  perl -lne 'print $1 if m/< (\d+)/'    \
                               ))

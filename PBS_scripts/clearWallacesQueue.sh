@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
+PATH="$PATH:/usr/local/packages/torque/2.4.16/bin/"
+ncpus=12
 running=
 held=
+torls=
 
 function numRunning { 
    running="$(qstat -B | awk '(/[0-9]/){print $5}')" 
@@ -9,30 +12,42 @@ function numRunning {
 function numHeld    {
    held="$(qstat -B | awk '(/[0-9]/){print $6}')"
 }
+function nextHeld {
+   torls="$(qstat |awk -F'.' '(/ H batch/){print $1;exit}')"
+}
 
 
 numHeld
 numRunning
 
 while [ -n $held  ]; do 
-   echo $held held;
+   echo $held held, $running running;
    
-   while [ $running -lt 5 ]; do
+   while [ $running -lt $ncpus ]; do
      echo $running running
-     torelease="$(qstat |awk -F'.' '(/ H batch/){print $1;exit}')"
+     
+     nextHeld
 
-     echo releaseing $torelease
+     echo releaseing $torls
      # free one that is held
-     qrls $torelease
+     # and wait for the queue to catch up
+     qrls $torls
 
-     # give it a chance to register
-     sleep 2;
+     # possum eats up 12% of the ram in the first 3mins, then drops down to 3.7
+     sleep 400;
+
      # get new number running
      numRunning
    done
 
-   # poll ever 5minutes
-   sleep 300s
+   # panic if too much is running
+   numRunning
+   [ $running -gt $ncpus ] && exit
+
+   # poll ever 10minutes
+   echo "Sleeping for 10min"
+   sleep 600s
+
    # update how many are held
    numHeld
 

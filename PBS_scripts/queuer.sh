@@ -5,7 +5,7 @@
 ###                 ###
 
 #PBS -l ncpus=16
-#PBS -l walltime=20:00:00
+#PBS -l walltime=200:00:00
 #dont use leading zeros
 #PBS -q batch
 

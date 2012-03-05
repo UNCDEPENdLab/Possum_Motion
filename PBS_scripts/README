@@ -15,3 +15,10 @@ master.sh      --  use variables/activation* and variables/*motion to decided wh
 queuer.sh      -- UNCOMMENT actual run code (currently only echos what it would do)
 
 waiter.sh      -- corrected bad logic in detecing if complete. UNTESTED (grep -l |wc == totalcpus --> end wait loop) 
+
+
+
+----- use case server rebooted. not all completed:
+o  ./master.sh to see which didn't run (looks in logs for finished text)
+o  check run output
+o  REALLYRUN=1 QSUBCOMMAND="qsub -h -m abe -M foranw@upmc.edu" ./master.sh

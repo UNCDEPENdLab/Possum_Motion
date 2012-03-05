@@ -40,8 +40,12 @@ while sleep 3000; do
 done
 
 
-# execute with qsub?
+# combine everything
 set -xe
-possum_sum -i ${SimOutDir}/possum_ -o ${SimOutDir}/combined -n ${TotalCPUs} -v
-signal2image -i ${SimOutDir}/combined -a --homo -p $PulseFile -o ${SimOutDir}/Brain_${simID}
+possum_sum -i ${SimOutDir}/possum_ -o ${SimOutDir}/combined -n ${TotalCPUs} -v 2>&1          |
+   tee $LogDir/possum_sum-$(date +%F).log
+
+signal2image -i ${SimOutDir}/combined -a --homo -p $PulseFile -o ${SimOutDir}/Brain_${simID} |
+   tee $LogDir/signal2image-$(date +%F).log
+
 set +xe

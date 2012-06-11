@@ -1,0 +1,32 @@
+
+UNRESOLVED:  possum simulated activation does not correlate with given input activity 
+
+use ./runMe.sh to reproduce
+
+1. create input activation from mostly motionless subject data
+   * masked with 244 ROIs
+   * "T2* units," see original/Scripts/createTemplate.bash (not in runMe.sh)
+       `((${TE}/(${TE}/${T2static}-log(a)))-${T2static})/1000`
+
+
+2. truncate real activation to simulation length, write timecourse and motion file
+   * calculate based on junking fist 4 volumes of the simulation
+   * use subj recording TR against simulation TR to provide an appropriate number of volumes.
+   * start timecourse and motion at junkVolumes*simTR+recordTR and increment by recordTR
+
+3. generate pulse
+   * parameters set by fiddling with gui
+
+
+4. run possum
+   * no motion
+   * MR and RF default files
+
+5. preprocess
+   * included pipeline: restPreproc_possum.bash
+
+6. check how well the simulation correlates to the input 
+   * Check_ActivationCorrs_11Vol.R
+   * checks overall and per ROI
+   * requires R, and install.packages(c('oro.nifti','pracma','fmri'))
+   

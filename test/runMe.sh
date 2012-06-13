@@ -55,7 +55,7 @@ HEREDOC
 ### Build inputs
 
 #### Build pulse
-[ -r inputs/pulse_15 ] || \
+[ -r inputs/pulse_15 ] && echo "Already created Pulse"  || \
  pulse -i fromSubj/possum_10653_fast.nii.gz                          \
        -o inputs/pulse_15  --te=0.029 --tr=$TR_pulse                 \
       --trslc=0.066 --nx=58 --ny=58 --dx=0.0032 --dy=0.0032          \
@@ -81,7 +81,6 @@ perl -slane 'BEGIN{$n=0;@l=();
 
 
 #### Activation
-
 ##### Time
 # start activation time offset by junkvolNum * TR_pulse
 # *** maybe -5 instead of -1 ? -- the first 4 are junk
@@ -89,7 +88,7 @@ perl -le "print ${TR_record}*\$_ + ${subjActStartTime} for (0..$volFromSubj-1)" 
 
 ##### Truncate real activation, not concerned with junk vols
 # nii file input comes from original/Scripts/createTemplate.bash
-[ -r inputs/act1.5_15.nii.gz ] || \
+[ -r inputs/act1.5_15.nii.gz ] && echo "Already have activation" || \
  3dTcat -overwrite -prefix inputs/act1.5_15.nii.gz fromSubj/10653_POSSUM4D_bb244_fullFreq_RPI.nii.gz[0..$((($volFromSubj-1)))] 
 # should refit to TR_pulse? not TR, doesn't matter anyway?
 #3drefit -TR $TR_record inputs/act1.5_15.nii.gz 
@@ -131,25 +130,27 @@ while pgrep possum;do echo "sleeping 30"; sleep 30m; done
 
 ##### combine all the runs
 
-[ -r sim/combined  ] || \
+[ -r sim/combined  ] && echo "Already combined possum jobs" || \
  possum_sum -i sim/possum_ -o sim/combined -n $cpus -v 2>&1 |
   tee logs/possum_sum.log
 
 ##### put into nifiti
-[ -r sim/simBrain_abs.nii.gz ] || \
+[ -r sim/simBrain_abs.nii.gz ] && echo "Already have image" || \
  signal2image -i sim/combined -a --homo -p inputs/pulse_15 -o sim/simBrain |
   tee logs/signal2image.log
 
-## copy nifti to preproc, don't copy, truncate
-#3dcopy sim/simBrain_abs.nii.gz preproc/simBrain.nii.gz
+## copy nifti to preproc, don't copy, truncate (truncation done in preproc script)
+3dcopy -overwrite sim/simBrain_abs.nii.gz preproc/simBrain.nii.gz
 
 ### remove junk volumes  (bandpass doesn't like having too few volumes, have to use 3dDetrend for small volume test run)
-3dTcat -overwrite -prefix preproc/simBrain_goodVols.nii.gz sim/simBrain_abs.nii.gz[$junkVol..$] 
+# no need, done by restPreproc
+#3dTcat -overwrite -prefix preproc/simBrain_goodVols.nii.gz sim/simBrain_abs.nii.gz[$junkVol..$] 
 
 ##### preprocess nifiti (skull strip, bandpass)
 cd preproc
-../restPreproc_possum.bash -4d simBrain_goodVols.nii.gz
+../restPreproc_possum.bash -4d simBrain.nii.gz -chop_vols 5
 cd -
+
 
 
 #### check corrilation

@@ -1,0 +1,22 @@
+# tar -cvjf possum.tar.bz2 $(sed 's/#.*//' includedInTar.txt)
+#
+##### help
+includedInTar.txt # This file: what's in the tarball
+readme            # whats going on
+illustration      # cartoon of what's going on
+
+##### input
+fromSubj        # motionless subject data
+inputs          # inputs created by runMe.sh
+mni             # mni brains used
+
+##### scripts
+runMe.sh                       # the wrapper script
+restPreproc_possum.bash        # process possum output so it can be compared to subject
+Check_ActivationCorrs_11Vol.R  # how is the simulation correlated to it's input
+original/Scripts               # scripts that generated the input used
+
+##### outputs
+sim/simBrain_abs.nii.gz                                           # possum output
+preproc/nbswkmt_simBrain_trunc5_6_scale1_1mm_244GMMask_RPI.nii.gz # preproc possum output (ready to be compared)
+cor.pdf                                                           # graph of each roi input and simulation

@@ -3,6 +3,9 @@ UNRESOLVED:  possum simulated activation does not correlate with given input act
 
 use ./runMe.sh to reproduce
 
+see illustration/PossumVolumes.pdf
+    includedInTar.txt
+
 1. create input activation from mostly motionless subject data
    * masked with 244 ROIs
    * "T2* units," see original/Scripts/createTemplate.bash (not in runMe.sh)
@@ -28,5 +31,5 @@ use ./runMe.sh to reproduce
 6. check how well the simulation correlates to the input 
    * Check_ActivationCorrs_11Vol.R
    * checks overall and per ROI
-   * requires R, and install.packages(c('oro.nifti','pracma','fmri'))
+   * requires R, and install.packages(c('oro.nifti','pracma','fmri','ggplot2'))
    

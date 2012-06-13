@@ -185,7 +185,7 @@ applywarp --ref=${mniTemplate_3mm} \
 fslmaths ${procprefix}_${funcFile} -Tmin -bin extents_mask -odt char
 
 ############
-# smooth
+# 5. smooth
 procprefix="s$procprefix" #swkmt_
 if [ ! -f ${procprefix}_${funcFile}_${smoothing_kernel}.nii.gz ]; then
     fslmaths ${procprefix:1}_${funcFile} -Tmean ${procprefix:1}_mean_${funcFile}
@@ -196,19 +196,24 @@ fi
 fslmaths ${procprefix}_${funcFile}_${smoothing_kernel} -mul extents_mask ${procprefix}_${funcFile}_${smoothing_kernel} -odt float
 
 ##########
-# bandpass
+# 6. bandpass
 procprefix="b$procprefix" #bswkmt_
 #use 3dBandpass here for consistency (no nuisance regression, of course)
 #in particular, this is used to quadratic detrend all voxel time series, which makes the scaling to 1.0 sensible.
+# "(2) Removal of a constant+linear+quadratic trend"
 #otherwise, the -ing 100 makes all brain voxels high and all air voxels low. Would need to ing within mask otherwise.
 
-#3dBandpass -input ${procprefix:1}_${funcFile}_${smoothing_kernel}.nii.gz -mask extents_mask.nii.gz \
-#    -prefix ${procprefix}_${funcFile}_${smoothing_kernel}.nii.gz 0 99999
+3dBandpass -overwrite -input ${procprefix:1}_${funcFile}_${smoothing_kernel}.nii.gz -mask extents_mask.nii.gz \
+    -prefix ${procprefix}_${funcFile}_${smoothing_kernel}.nii.gz 0 99999
 
+# DSET_NVALS(inset) < 9 == FATAL ERROR: Input dataset is too short!
 # but 3dbandpass needs a min num of subvolumes  and when we remove the first 4 "junk" volumes, we are below this.
-#So we'll use 3dDetrend
-3dDetrend -input ${procprefix:1}_${funcFile}_${smoothing_kernel}.nii.gz -mask extents_mask.nii.gz \
-    -prefix ${procprefix}_${funcFile}_${smoothing_kernel}.nii.gz 
+# so we'll use 3dDetrend: make the sum-of-squares equal to 1
+# no mask for where the brain is with 3dDetrend?
+#3dDetrend  -expr 't^2+t'\
+#           -prefix ${procprefix}_${funcFile}_${smoothing_kernel}.nii.gz \
+#           ${procprefix:1}_${funcFile}_${smoothing_kernel}.nii.gz
+#           #-mask extents_mask.nii.gz \
 
 #intensity normalization to mean 1.0. This makes it comparable to the original activation input (before T2* scaling)
 #logic: add some constant to all voxels, then determine the grand mean intensity scaling factor to achieve M = 100
@@ -218,7 +223,7 @@ procprefix="b$procprefix" #bswkmt_
 fslmaths ${procprefix}_${funcFile}_${smoothing_kernel} -add 100 -ing 100 ${procprefix}_${funcFile}_${smoothing_kernel}_scaleM100 -odt float
 
 #####
-# n
+# 7. normalize
 procprefix="n$procprefix" #nbswkmt_
 #dividing the M=100 file by 100 yields a proportion of mean scaling (PSC)
 fslmaths ${procprefix:1}_${funcFile}_${smoothing_kernel}_scaleM100 -div 100 ${procprefix}_${funcFile}_${smoothing_kernel}_scale1 -odt float

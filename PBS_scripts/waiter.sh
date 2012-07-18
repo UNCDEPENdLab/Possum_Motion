@@ -25,19 +25,19 @@ LogFile=$LogDir/$TotalCPUs
 
 # check for the status of the last log file at some interval 
 #   maybe sleep for walltime
-while sleep 3000; do
-
-  # if log file isn't readable, keep waiting
-  [ -r $LogFile ] || continue
-
-  # if log file has the last line, move on
-  # [ -z "$(sed -ne '/^Possum finished generating/p' $LogFile)" ] || break
-  
-  # cannot do above, last log might be created before first!
-  # instead count all the files matching and compare to total
-  [ "$(grep -l '^Possum finished generating' $LogDir/* |wc -l)" -ge $TotalCPUs ] && break
-
-done
+#while sleep 3000; do
+#
+#  # if log file isn't readable, keep waiting
+#  [ -r $LogFile ] || continue
+#
+#  # if log file has the last line, move on
+#  # [ -z "$(sed -ne '/^Possum finished generating/p' $LogFile)" ] || break
+#  
+#  # cannot do above, last log might be created before first!
+#  # instead count all the files matching and compare to total
+#  [ "$(grep -l '^Possum finished generating' $LogDir/* |wc -l)" -ge $TotalCPUs ] && break
+#
+#done
 
 
 # combine everything

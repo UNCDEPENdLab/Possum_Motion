@@ -2,9 +2,9 @@
 
 #
 # builds pulse and runs possum
-# processes nifiti
+# processes nifti
 # compare activation of simulated and near zero-motion subject 10653
-# !!!! PROBLEM: actual activation is not corrilated with simulation 
+# !!!! PROBLEM: actual activation is not correlated with simulation 
 #
 #
 # inputs/
@@ -148,11 +148,11 @@ while pgrep possum;do echo "sleeping 30"; sleep 30m; done
 
 ##### preprocess nifiti (skull strip, bandpass)
 cd preproc
-../restPreproc_possum.bash -4d simBrain.nii.gz -chop_vols 5
+../restPreproc_possum.bash -4d simBrain.nii.gz -chop_vols $junkVols  #was junkVols+1, likely in error
 cd -
 
 
 
-#### check corrilation
+#### check correlation
 # need R and a few R packages (see readme)
 Rscript Check_ActivationCorrs_11Vol.R

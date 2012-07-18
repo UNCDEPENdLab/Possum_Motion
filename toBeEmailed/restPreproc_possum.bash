@@ -135,21 +135,6 @@ procprefix="w$procprefix" #wkmt_
 #N.B.: The POSSUM T1 input is already in MNI space and of the desired orientation and voxel size.
 #Thus, the task here is co-registration, NOT warping per se.
 
-#one approach: just resample the brain to match the geometry of the POSSUM input T1
-#PROBLEM: There is a big translation between POSSUM output and the template T1 space.
-#This occurs because the coordinate system of the POSSUM output is arbitrary, similar to scanner anatomical.
-#But the relative shape, size, etc. of the POSSUM output is correct, only the orientation and origin are offset.
-#flirt -in kmt_${funcFile} -ref ${templateT1} -applyxfm -init ${FSLDIR}/etc/flirtsch/ident.mat \
-#    -out wkmt_${funcFile}_resampOnly -paddingsize 0.0 -interp sinc -sincwidth 7 -sincwindow hanning
-
-#Similar problems with AFNI
-#3dresample -overwrite -inset kmt_${funcFile}.nii.gz -master ${templateT1} -prefix wkmt_${funcFile}_resampleOnlyAFNI.nii.gz
-
-#This is right: co-register mean functional to structural, allowing for translation, rotation, and global scaling
-#The transformation matrix is ~1 on the diagonal (scaling) and 0 on the off-diagonal (rotation), but big translation components.
-#flirt -in kmt_mean_${funcFile} -ref ${templateT1} -out func_to_mprage -omat func_to_mprage.mat -dof 7 \
-#    -interp sinc -sincwidth 7 -sincwindow hanning
-
 #Sensible: force flirt to 3 df to allow for translation only since there should be a 1:1 match with the input.
 #i.e., the relative position and size of the POSSUM output should precisely match input.
 #Is there a possibility that more df will be needed to co-register once we have motion to contend with?
@@ -240,13 +225,3 @@ flirt -in ${procprefix}_${funcFile}_${smoothing_kernel}_scale1 \
 #now should apply the 244 GM mask to these data for comparison
 3dcalc -overwrite -a ${procprefix}_${funcFile}_${smoothing_kernel}_scale1_1mm.nii.gz -b ${templateGMMask} -expr 'a*b' \
     -prefix ${procprefix}_${funcFile}_${smoothing_kernel}_scale1_1mm_244GMMask.nii.gz
-
-
-
-
-##########
-
-#This is a mistake: POSSUM output will be in MNI space based on already warped brain.
-#By contrast, these coefs warp 10653's native space brain into MNI...
-#Should resample instead.
-#####templateWarpCoef=/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mprage/mprage_warpcoef.nii.gz

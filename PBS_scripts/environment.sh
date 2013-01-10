@@ -20,8 +20,6 @@ function die {
 }
 
 
-
-
 ##################
 ### Parameters ###
 ##################
@@ -42,19 +40,17 @@ QueLogDir="$SCRATCH/log/"
 export FSLOUTPUTTYPE=NIFTI_GZ
 
 # put possum and tools in the path
-PATH="$PATH:$HOME/Possum-02-2012/bin"
+PATH="$PATH:$HOME/Possum_Motion/bin"
 
 ROOTDIR=$HOME;
 [[ $HOSTNAME =~ skynet ]] && ROOTDIR="/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/"
- VARDIR="$ROOTDIR/Possum-02-2012/variables/"
-BASEDIR="$ROOTDIR/Possum-02-2012/defaults/"
-#BASEDIR="/Users/michaelhallquist/Data_Analysis/rs-fcMRI_Motion/possum" #CHANGE ME! location of possum files
-#BASEDIR="/Volumes/Serena/possum_speedup_tests_xsede/" # change me!
+ VARDIR="$ROOTDIR/Possum_Motion/variables/"
+BASEDIR="$ROOTDIR/Possum_Motion/defaults/"
 
 TotalCPUs=128
 
 # runs the BlockedSize (16) jobs
-scriptDir="$ROOTDIR/Possum-02-2012/PBS_scripts/"
+scriptDir="$ROOTDIR/Possum_Motion/PBS_scripts/"
 qsubScript=$scriptDir/queuer.sh 
 
 [ -r "$qsubScript" ] || die  "cannot open queuer $qsubScript!"
@@ -67,11 +63,9 @@ BlockedSize=$(perl -ne 'print $1 if /^#PBS\s+-l\s+ncpus=(\d+)/' $qsubScript)
 
 [ -n "$BlockedSize" ] || die  "missing #PBS -l ncpus!"
 
-
 #
 # Possum input files 
 #
-
 
 # files used for every run of every simulation
 #       MotionFile=    <-- should be coming from parent script
@@ -83,6 +77,3 @@ BlockedSize=$(perl -ne 'print $1 if /^#PBS\s+-l\s+ncpus=(\d+)/' $qsubScript)
             MRFile="${BASEDIR}/MRpar_3T"
     ActivationFile="${VARDIR}/${ActivePrefix}.nii.gz"
 ActivationTimeFile="${VARDIR}/${ActivePrefix}_time"
-
-
-

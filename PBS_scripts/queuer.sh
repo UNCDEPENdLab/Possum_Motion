@@ -18,15 +18,13 @@
 
 
 if [[ $HOSTNAME =~ skynet ]]; then
-   PBSSCRIPTDIR="/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/Possum-02-2012/PBS_scripts/"
+   PBSSCRIPTDIR="/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/Possum_Motion/PBS_scripts/"
 else
-   PBSSCRIPTDIR=$HOME/Possum-02-2012/PBS_scripts/
+   PBSSCRIPTDIR=$HOME/Possum_Motion/PBS_scripts/
 fi
 
 source $PBSSCRIPTDIR/environment.sh
 source $PBSSCRIPTDIR/simIDVars.sh
-
-
 
 ##############
 ### Checks ###
@@ -53,8 +51,7 @@ dircheck "LogDir"
 dircheck "QueLogDir"
 dircheck "SimOutDir"
 
-
-echo "SCRACTC: $SCRATCH"
+echo "SCRATCH: $SCRATCH"
 echo "LogDir:  $LogDir"
 echo "Jobs:    $ARGS"
 echo "Host:    $HOSTNAME"
@@ -70,7 +67,7 @@ IFS=:
 for jobID in $ARGS; do
    
 
-   # job comleltion check/parse requires the log file be named only a number
+   # job completion check/parse requires the log file be named only a number
    LogFile="$LogDir/${jobID}"
 
    let jobID--  #possum is zero based, the log structure is not!

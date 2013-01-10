@@ -12,7 +12,7 @@
 #
 #    EXAMPLE:
 #
-#    mkdir -p ~/Possum-02-2012/runlog/$(date +%F) && cd $_
+#    mkdir -p ~/Possum_Motion/runlog/$(date +%F) && cd $_
 #    REALLYRUN=1 ../../PBS_Scripts/master.sh
 #
 #
@@ -40,7 +40,7 @@
 
 case "$HOSTNAME" in 
     *blacklight*|*wallace*|*gromit*)
-	SCRIPTDIR="$HOME/Possum-02-2012/PBS_scripts/" ;;
+	SCRIPTDIR="$HOME/Possum_Motion/PBS_scripts/" ;;
     *)
 	SCRIPTDIR="ERROR" ;;
 esac

@@ -1,0 +1,5 @@
+This directory contains the files to run the stock POSSUM example of activation simulation described here:
+http://fsl.fmrib.ox.ac.uk/fsl/fsl-4.1.9/possum/input.html#activation
+Data were simulated on blacklight using 32 cores.
+Sequence used was for TR of 2.0, 30ms TE, 3.2 x 3.2 x 4.0 mm voxels.
+Relative to FSL dataset, I shifted the activation timecourse by 3 TRs to allow for discarding of the first 3 volumes while achieving stable magnetization.

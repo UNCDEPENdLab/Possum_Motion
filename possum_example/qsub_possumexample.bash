@@ -51,11 +51,13 @@ for ((jobID=1; jobID <= ncpus ; jobID++)); do
    # run or print out what we would run
    if [ "$REALLYRUN" == "1" ]; then
 
+      
+      #possum expects procid and output to be zero-based (0..[n-1])
       set -x
       possum                               \
           --nproc=$ncpus                   \
           --procid=$jobID_0                \
-          -o $SimOutDir/possum_${jobID}    \
+          -o $SimOutDir/possum_${jobID_0}  \
           -m $inputDir/zeromotion          \
           -i $inputDir/brain.nii.gz        \
           -x $inputDir/MRpar_3T            \
@@ -80,7 +82,7 @@ for ((jobID=1; jobID <= ncpus ; jobID++)); do
       echo possum                          \
           --nproc=$ncpus                   \
           --procid=$jobID_0                \
-          -o $SimOutDir/possum_${jobID}    \
+          -o $SimOutDir/possum_${jobID_0}  \
           -m $inputDir/zeromotion          \
           -i $inputDir/brain.nii.gz        \
           -x $inputDir/MRpar_3T            \

@@ -5,7 +5,7 @@
 ###                 ###
 
 #PBS -l ncpus=256
-#PBS -l walltime=32:00:00
+#PBS -l walltime=18:00:00
 #PBS -q batch
 #PBS -j oe
 #PBS -M hallquistmn@upmc.edu
@@ -36,7 +36,7 @@ FSLOUTPUTTYPE=NIFTI_GZ
 PATH=$HOME/Possum_Motion/bin/linux:${PATH}
 export PATH FSLOUTPUTTYPE
 
-[ ! -f $inputDir/tr2_te30_pulse ] && source $inputDir/default_pulse.bash
+[ ! -f $inputDir/tr2_te30_pulse ] && bash $inputDir/default_pulse.bash
 
 which ja && ja
 
@@ -55,12 +55,12 @@ for ((jobID=1; jobID <= ncpus ; jobID++)); do
           --nproc=$ncpus                   \
           --procid=$jobID_0                \
           -o $SimOutDir/possum_${jobID_0}    \
-          -m $inputDir/zeromotion          \
+          -m $inputDir/motion_parameters/zeromotion          \
           -i $inputDir/possum_10895_fast.nii.gz        \
           -x $inputDir/MRpar_3T            \
           -f $inputDir/slcprof             \
           -p $inputDir/tr2_te30_pulse       \
-          --activ4d=$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq.nii.gz \
+          --activ4D=$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq.nii.gz \
           --activt4D=$inputDir/activt_150 \
             > $LogFile &
       set +x
@@ -80,12 +80,12 @@ for ((jobID=1; jobID <= ncpus ; jobID++)); do
           --nproc=$ncpus                   \
           --procid=$jobID_0                \
           -o $SimOutDir/possum_${jobID_0}    \
-          -m $inputDir/zeromotion          \
+          -m $inputDir/motion_parameters/zeromotion          \
           -i $inputDir/possum_10895_fast.nii.gz        \
           -x $inputDir/MRpar_3T            \
           -f $inputDir/slcprof             \
           -p $inputDir/tr2_te30_pulse       \
-          --activ4d=$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq.nii.gz \
+          --activ4D=$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq.nii.gz \
           --activt4D=$inputDir/activt_150 \
             ">" $LogFile
       echo

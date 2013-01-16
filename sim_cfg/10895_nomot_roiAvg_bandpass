@@ -1,0 +1,8 @@
+simName="10895_nomot_roiAvg_bandpass"
+motion="$motionDir/zeromotion"
+t1input="$inputDir/possum_10895_fast.nii.gz"
+activ4D="$inputDir/10895_POSSUM4D_bb264_roiAvg_bandpass.nii.gz"
+activTime="$inputDir/activt_150"
+mrPar="$inputDir/MRpar_3T"
+slcprof="$inputDir/slcprof"
+pulse="$inputDir/tr2_te30_pulse"

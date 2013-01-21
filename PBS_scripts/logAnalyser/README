@@ -1,0 +1,20 @@
+Possum divides its work up into a set number of jobs. The time required for each job to complete is variable. 
+
+After submitting to PBS, some have not finished either because the job takes an abnormally long time to finish
+or the job was not launched until the time quota was nearly meet.
+As a result, unfinished possum jobs vary in expected run time greatly.
+Jobs cannot be resumed; they must be started from the beginning.
+
+The run time can be estimated in a very rough sense by extrapolating from the possum log file.
+Because Possum simulates 3 different tissue types and the run could have failed at any point in the process,
+estimate quality is not consistent. 
+
+Regardless, from these estimates, an attempt can be made to optimizing the time needed to complete previous failed jobs
+while minimizing super computing time charged to idle processors.
+
+possumLogtime.pl computes estimates
+generateParitions.R  uses biggestFillPartition.R to design naively optimized jobs/processor for each possible partition of processors 2 to #jobs-2
+
+
+see biggestFillParition.R for naive optimization documentation
+

@@ -43,7 +43,9 @@ logdir=$(cd $1; pwd)
 # what config file is used
 sim_cfg=$(basename $(dirname $logdir))
 sim_cfg=${sim_cfg%_*}
+
 # check sim_cfg exists
+# assume root src folder is in $HOME, this is also done elsewhere
 [ ! -r $HOME/Possum_Motion/sim_cfg/$sim_cfg ] && echo "Unknown $sim_cfg" && exit 1
 
 
@@ -57,14 +59,13 @@ cd $scriptdir
 # estimate run times of possum jobs
 find $logdir -type f | egrep -v 0001 | $scriptdir/possumLogtime.pl > $outdir/possumTimes.txt
 
+# load R module if we are on blacklight
 if [ -r /usr/share/modules/init/sh ]; then
-  echo 'loading R'
   source /usr/share/modules/init/sh
   module load R
 fi
 # group remaining run times into equal sized bins
 # created $otudir/finish-with-#-PBS.bash
-echo Rscript $scriptdir/generateParitions.R "$outdir/possumTimes.txt" "$outdir/"
 Rscript $scriptdir/generateParitions.R "$outdir/possumTimes.txt" "$outdir/"
 
 cd $outdir
@@ -73,5 +74,5 @@ cd $outdir
 sed -i "s:__simName__:$sim_cfg:g" $outdir/finish-with*bash
 
 cp $scriptdir/possumRun.bash $outdir
-echo qsub $outdir/finish-with*
+echo "qsub -N \"finish possum\" " $outdir/finish-with*
 

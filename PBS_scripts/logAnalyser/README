@@ -1,20 +1,13 @@
 ################################
+  
+  should only need to run
+  ./submitIncompleteEfficiantly.bash $logdirectory
 
-  \ls -1 *|grep -v 0001 | possumLogtime.pl  > possumTimes.txt
-  r -i generateParitions.R
-  qsub -N "finish up possum" -v MotionFile=,...
- 
- ## need to provide 
-          $TotalCPUs
-          $jobID
-          $SimOutDir/possum_${runum}
-          ${MotionFile}
-          ${BrainFile}
-          ${MRFile}
-          ${RFFile}
-          ${PulseFile}
-          ${ActivationFile}
-          ${ActivationTimeFile}
+  our try
+  \ls -1 $logdirectory*|grep -v 0001 | possumLogtime.pl  > possumTimes.txt
+  Rscript generateParitions.R possumTimes.txt ./
+  qsub -N "finish up possum"  finish-with-*-PBS.bash
+
 ################################
 
 Possum divides its work up into a set number of jobs. The time required for each job to complete is variable. 

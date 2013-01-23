@@ -35,10 +35,16 @@
 # --- will use fill with biggests first naive algorithm 2/3 optimal :-/
 source('biggestFillPartition.R')
 
+args <- commandArgs(TRUE)
+inputfilename <- args[1]
+outputfilname <- args[2]
 # change this file to read in others
-cat ("# ls 1 * | egrep -v 0001 | possumLogtime.pl > possumTimes.txt\n")
-cat ("What file has the perl parsed log times? ")
-inputfilename <- readline()
+if(is.null(inputfilename) ){
+  cat ("# ls 1 * | egrep -v 0001 | possumLogtime.pl > possumTimes.txt\n")
+  message("What file has the perl parsed log times? ")
+  inputfilename <- readLines("stdin",n=1)
+}
+
 times.all <- read.table(inputfilename,header=T)
 times     <- times.all[times.all$remainingsec>0,]
 remain    <- times$expectedsec/60**2
@@ -71,15 +77,17 @@ p<- ggplot(data=df,aes(x=run,y=lost,label=numProc))+
      geom_text()+theme_bw()+
      ggtitle("run time vs lost time (hours)") +
      scale_y_continuous(limits=c(0,200))
+x11()
 print(p)
 
 # best  -- likely always to be grouping by 2 processors
 best <- unname(which.min(lost))
 #cat('numproc: ',  best + 1, "\n" )
-
+print(df)
 cat("\n\n\n\n\n")
-cat(best+1, "losses the least\nbut how many processors is optimal totalTimeVsCharge? ")
-best <- as.numeric(readline()) - 1
+cat(best+1, "losses the least\n")
+message("how many processors givs optimal totalTimeVsCharge? ")
+best <- as.numeric(readLines("stdin",n=1)) - 1
 
 
 # which possum nums do groups correspond to?
@@ -87,11 +95,15 @@ best <- as.numeric(readline()) - 1
 
 timetocomplete <- unlist(lapply(allbins[[best]]$binidx, function(x) { sum(times$expectedsec[x])/60**2 } ))
 totaltime <- max(timetocomplete)
-filename <- paste("finish-possum-with-",best+1,"-PBS.bash",sep="")
+filename <- paste(outputfilname, "finish-with-",best+1,"-PBS.bash",sep="")
 sink(file=filename)
 cat(paste("#PBS -l ncpus=",best+1,sep=""),"\n" )
 cat(paste("#PBS -l walltime=",round(totaltime)+3,":00:00",sep=""),"\n" )
 cat("#PBS -q batch\n" )
+cat("#PBS -j oe\n")
+cat("#PBS -M hallquistmn@upmc.edu\n")
+
+cat("simName=__simName__\n")
 cat("source possumRun.bash\n" )
 cat( 
   paste( '(',  

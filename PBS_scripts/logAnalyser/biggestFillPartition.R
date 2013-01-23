@@ -48,7 +48,7 @@ magicPartition <- function(set,i) {
    # so the bins should be equal and sum to the total
    #  for i bins, each bin should fit as close as possible to sum/i
    binTotal  <- sum(set)/i
-   print(c(n,binTotal))
+   #print(c(n,binTotal))
 
    # sort so we know when we find the first that fits in a bin
    # it is the biggest that will fit
@@ -72,18 +72,18 @@ magicPartition <- function(set,i) {
         newBin <- c(bins[[binNum]],sorted$x[take])
         bins[[binNum]] <- newBin
         bins.idx[[binNum]] <- c(bins.idx[[binNum]],sorted$ix[take])
-        cat(binNum,": +",take,"->", sorted$x[take], "=", sum(bins[[binNum]]), "\n")
+        #cat(binNum,": +",take,"->", sorted$x[take], "=", sum(bins[[binNum]]), "\n")
      }  else {
-       print(sorted$x[takeorder]+currentTotal)
-       print(binTotal)
+       #print(sorted$x[takeorder]+currentTotal)
+       #print(binTotal)
 
        binNum<-binNum+1
-       cat("skipping to", binNum, "\n")
+       #cat("skipping to", binNum, "\n")
 
        if(binNum > i ) {
           binNum <- which.min( lapply(bins,sum) )
           binTotal <- ceiling( sum(   c( bins[[binNum]], max(sorted$x[takeorder]) )    )  )
-          cat('bin total increased to ', binTotal, "\n")
+          #cat('bin total increased to ', binTotal, "\n")
         }
      }
    }
@@ -95,7 +95,7 @@ magicPartition <- function(set,i) {
 
    sums<- unlist(lapply(bins,sum))
    totalLost <- sum(sums[which.max(sums)] - sums)
-   cat("total lost hours: ", totalLost,"\n")
+   #cat("total lost hours: ", totalLost,"\n")
 
    obj<- list(bins=bins,binidx=bins.idx,
               runtime=max(sums), totallost=totalLost,

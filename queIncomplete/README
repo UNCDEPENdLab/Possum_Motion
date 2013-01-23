@@ -1,7 +1,7 @@
 ################################
   
   should only need to run
-  ./submitIncompleteEfficiantly.bash $logdirectory
+  ./queueIncomplete.bash $logdirectory
 
   our try
   \ls -1 $logdirectory*|grep -v 0001 | possumLogtime.pl  > possumTimes.txt

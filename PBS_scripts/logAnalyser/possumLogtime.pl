@@ -38,11 +38,15 @@ print join("\t",qw(poss_logfile vox/s voxT0 voxT1 voxT2 expectedsec remainingsec
  
 #input should be log file names
 while($_=shift(@ARGV) or $_=<> ) {
+ 
  next if !$_ ;
  chomp;
  my $logfile=$_;
  #print "$_ not a log file! (.log\$)" && next if ! m/.log$/;
- print "$logfile DNE" && next if ! -e $logfile;
+ if(! -e $logfile) {
+  print STDERR "$logfile DNE\n";
+  next;
+  }
  #print "looking at $_\n";
  my $ctime = stat($logfile)->ctime();
  my $mtime = stat($logfile)->mtime();
@@ -53,8 +57,9 @@ while($_=shift(@ARGV) or $_=<> ) {
 
   # get the mod time of the first log file if we haven't already
   if(! $log1mtime) {
-   my @log1 =  bsd_glob(dirname($logfile) . '/*_00*1*');
-   die "cannot find initial log file!" if ! -e $log1[0];
+   my $dirname =dirname($logfile);
+   my @log1 =  bsd_glob("$dirname/*_00*1*");
+   die "cannot find initial log file!" if ! -e $#log1<0;
    #print "mtime for '$log1[0]' ";
    $log1mtime = stat($log1[0])->mtime();
    #print "$log1mtime\n";
@@ -111,7 +116,7 @@ while($_=shift(@ARGV) or $_=<> ) {
 
  my $voxPerSec = $voxelsSeen/$lifeSecs; 
  #print "\n\nhave seen ${voxelsSeen}vox (@voxPerTissue) in ${lifeSecs}s, rate=$voxPerSec\n";
- print join("\t", $logfile, sprintf("%.3f",$voxPerSec) , @voxPerTissue);
+ print join("\t", basename($logfile), sprintf("%.3f",$voxPerSec) , @voxPerTissue);
 
  if( ! $finished) {
     my $remainingTissues=3-$tissueTypesSeen;

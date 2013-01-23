@@ -56,22 +56,23 @@ which ja && ja
 
 
 ## RUN FUNCTION 
-
+# possum log numbers start at one, proc ids start at 0
 function possumRun { 
-   runum=$1
+   LogFile="$LogDir/possumlog_$1"
+   jobID_0=$(echo $1 - 1|bc)
    echo -n "start: "; date
    echo possum                               \
-          --nproc=$TotalCPUs               \
-          --procid=$jobID                  \
-          -o $SimOutDir/possum_${runum}    \
-          -m ${MotionFile}                 \
-          -i ${BrainFile}                  \
-          -x ${MRFile}                     \
-          -f ${RFFile}                     \
-          -p ${PulseFile}                  \
-          --activ4D=${ActivationFile}      \
-          --activt4D=${ActivationTimeFile} \
-          #  > $LogFile 
+           --nproc=$njobs \
+           --procid=$jobID_0 \
+           -o $SimOutDir/possum_${jobID_0} \
+           -m $motion \
+           -i $t1input \
+           -x $mrPar \
+           -f $slcprof \
+           -p $pulse \
+           --activ4D=$activ4D \
+           --activt4D=$activTime \
+           \> $LogFile 
    echo -n "finished: "; date
 }
 

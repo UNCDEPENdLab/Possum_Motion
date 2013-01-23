@@ -104,7 +104,7 @@ cat("#PBS -j oe\n")
 cat("#PBS -M hallquistmn@upmc.edu\n")
 
 cat("simName=__simName__\n")
-cat("source possumRun.bash\n" )
+cat("source $(cd $(basename $0);pwd)/possumRun.bash\n" )
 cat( 
   paste( '(',  
             lapply(allbins[[best]]$binidx, function(x) { 

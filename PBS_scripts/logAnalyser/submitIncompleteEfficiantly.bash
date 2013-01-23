@@ -15,6 +15,7 @@
 ##
 ##END
 
+set -e 
 # print help/usage if unexpected input
 [[ -z "$1" || ! -d "$1" ]] && sed -n "/##END/q;s:\$0:$0:g;s/^## //p" $0 && exit 1
 
@@ -32,14 +33,27 @@ sim_cfg=${sim_cfg%_*}
 # output
 outdir=$scriptdir/finish_${sim_cfg}_$(date +%F)
 [ ! -d $outdir ] && mkdir -p $outdir
-cd $outdir
+
+# need to be here for source command
+cd $scriptdir
 
 # estimate run times of possum jobs
-ls -1 $logdir | egrep -v 0001 | $scriptdir/possumLogtime.pl > $outdir/possumTimes.txt
+find $logdir -type f | egrep -v 0001 | $scriptdir/possumLogtime.pl > $outdir/possumTimes.txt
 
+if [ -r /usr/share/modules/init/sh ]; then
+  echo 'loading R'
+  source /usr/share/modules/init/sh
+  module load R
+fi
 # group remaining run times into equal sized bins
 # created $otudir/finish-with-#-PBS.bash
-RScript $scriptdir/generateParitions.R "$outdir/possumTimes.txt" "$outdir/"
+echo Rscript $scriptdir/generateParitions.R "$outdir/possumTimes.txt" "$outdir/"
+Rscript $scriptdir/generateParitions.R "$outdir/possumTimes.txt" "$outdir/"
+
+cd $outdir
+
+# give the qsub script the right configureation name
+sed -i "s:__simName__:$sim_cfg:g" $outdir/finish-with*bash
 
 cp $scriptdir/possumRun.bash $outdir
 echo qsub $outdir/finish-with*

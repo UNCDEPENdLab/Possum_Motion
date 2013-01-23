@@ -110,7 +110,9 @@ cat(
             lapply(allbins[[best]]$binidx, function(x) { 
                paste( 
                  paste('possumRun', 
-                     substring( as.character(times$poss_logfile[x]),11), sep=" "), 
+                     substring( as.character(times$poss_logfile[x]),11),
+                     as.character(times$sim_cfg[x]), 
+                     sep=" "), 
                      collapse="; ")
                }   
              ), 

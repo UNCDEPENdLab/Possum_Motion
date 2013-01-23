@@ -4,7 +4,7 @@
 ##    $0 logdirectory
 ##    * logdirectory must exist
 ##  EXAMPLE:
-##    $0 /brashear/hallquis/possum_rsfcmri/10895_nomot_roiAvg_fullFreq_16Jan2013-00:12/logs/
+##    $0 /brashear/hallquis/possum_rsfcmri/
 ##  
 ##  OUTPUT:
 ##    bash script ready for qsub
@@ -38,39 +38,42 @@ set -e
 
 # absolute paths
 scriptdir=$(cd $(dirname $0); pwd)
-logdir=$(cd $1; pwd)
-
-# what config file is used
-sim_cfg=$(basename $(dirname $logdir))
-sim_cfg=${sim_cfg%_*}
-# check sim_cfg exists
-[ ! -r $HOME/Possum_Motion/sim_cfg/$sim_cfg ] && echo "Unknown $sim_cfg" && exit 1
-
+logdirs=$(cd $1; pwd)
 
 # output
-outdir=$scriptdir/finish_${sim_cfg}_$(date +%F)
-[ ! -d $outdir ] && mkdir -p $outdir
+outdir=$scriptdir/finish_$(date +%F)
+[ -d $outdir ] &&  rm -r $outdir
+mkdir -p $outdir
 
-# need to be here for source command
-cd $scriptdir
-
-# estimate run times of possum jobs
-find $logdir -type f | egrep -v 0001 | $scriptdir/possumLogtime.pl > $outdir/possumTimes.txt
+for logdir in $logdirs/*/logs/; do
+  # what config file is used
+  sim_cfg=$(basename $(dirname $logdir))
+  sim_cfg=${sim_cfg%_*}
+  # check sim_cfg exists
+  [ ! -r $HOME/Possum_Motion/sim_cfg/$sim_cfg ] && echo "Unknown $sim_cfg" && continue #&& exit 1
+  
+  # estimate run times of possum jobs
+  find $logdir -type f | egrep -v 0001 | $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
+  
+done
 
 if [ -r /usr/share/modules/init/sh ]; then
   echo 'loading R'
   source /usr/share/modules/init/sh
   module load R
 fi
+
 # group remaining run times into equal sized bins
-# created $otudir/finish-with-#-PBS.bash
-echo Rscript $scriptdir/generateParitions.R "$outdir/possumTimes.txt" "$outdir/"
+# created $outdir/finish-with-#-PBS.bash
+
+# need to be here for source command
+cd $scriptdir
 Rscript $scriptdir/generateParitions.R "$outdir/possumTimes.txt" "$outdir/"
 
+# change 
 cd $outdir
-
 # give the qsub script the right configureation name
-sed -i "s:__simName__:$sim_cfg:g" $outdir/finish-with*bash
+#sed -i "s:__simName__:$sim_cfg:g" $outdir/finish-with*bash
 
 cp $scriptdir/possumRun.bash $outdir
 echo qsub $outdir/finish-with*

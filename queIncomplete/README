@@ -1,12 +1,16 @@
 ################################
   
-  should only need to run
   ./queueIncomplete.bash $logdirectory
+  qsub -N "Finish Possum" finish_$logdirsBase/finish-with-#-PBS.bash
 
-  our try
-  \ls -1 $logdirectory*|grep -v 0001 | possumLogtime.pl  > possumTimes.txt
-  Rscript generateParitions.R possumTimes.txt ./
-  qsub -N "finish up possum"  finish-with-*-PBS.bash
+  The above tries to simplify the outline
+    * estimate possum job run times
+       find $logdirectory -type f |grep -v 0001 | possumLogtime.pl  > possumTimes.txt
+    * optimize job grouping for least idle processor time
+       Rscript generateParitions.R possumTimes.txt ./
+    * submitting to qsub (doesn't help much there)
+       qsub -N "finish up possum"  finish-with-*-PBS.bash
+
 
 ################################
 

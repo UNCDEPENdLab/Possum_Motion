@@ -3,15 +3,29 @@
 ##   $0 logdirectory
 ##   * logdirectory must exist
 ## EXAMPLE:
-##   $0 /brashear/hallquis/possum_rsfcmri/10895_nomot_roiAvg_fullFreq_16Jan2013-00:12/log
+##   $0 /brashear/hallquis/possum_rsfcmri/10895_nomot_roiAvg_fullFreq_16Jan2013-00:12/logs/
 ##
 ## OUTPUT:
 ##   bash script ready for qsub
+##   last line of output will be qsub command
+##  
+##   creates a finish_* directory within queIncomplete/ with two scripts
+##   finish-with-#-PBS.bash one for qsub
+##   PossumRun.bash copied from this dir, to be  sourced to set up environment
+##   NOTE: Need to remove echo before possom in 'PossumRun.bash' 
+##
 ##
 ## ABOUT:
 ##   combines possumLogtime.pl and generateParitions.R
 ##   to choose the best combination of grouped incomplete possum jobs
 ##   such that total run time and processor idle time are minimized
+##
+##  * estimate possum job run times
+##     find $logdirectory -type f |grep -v 0001 | possumLogtime.pl  > possumTimes.txt
+##  * optimize job grouping for least idle processor time
+##     Rscript generateParitions.R possumTimes.txt ./
+##  * submitting to qsub (doesn't help much there)
+##     qsub -N "finish up possum"  finish-with-*-PBS.bash
 ##
 ##END
 

@@ -35,7 +35,11 @@
 # --- will use fill with biggests first naive algorithm 2/3 optimal :-/
 source('biggestFillPartition.R')
 
-times.all <- read.table('possumTimes.txt',header=T)
+# change this file to read in others
+cat ("# ls 1 * | egrep -v 0001 | possumLogtime.pl > possumTimes.txt\n")
+cat ("What file has the perl parsed log times? ")
+inputfilename <- readline()
+times.all <- read.table(inputfilename,header=T)
 times     <- times.all[times.all$remainingsec>0,]
 remain    <- times$expectedsec/60**2
 # sort(remain,index.return=T)
@@ -63,14 +67,45 @@ runtime <- unlist(lapply(allbins, '[', 'runtime'))
 
 library(ggplot2)
 df<-data.frame(run=runtime,lost=lost,numProc=seq(2,n)[1:length(runtime)]  )
-ggplot(data=df,aes(x=run,y=lost,label=numProc))+
+p<- ggplot(data=df,aes(x=run,y=lost,label=numProc))+
      geom_text()+theme_bw()+
      ggtitle("run time vs lost time (hours)") +
      scale_y_continuous(limits=c(0,200))
+print(p)
 
 # best  -- likely always to be grouping by 2 processors
 best <- unname(which.min(lost))
-cat('numproc: ',  best + 1, "\n" )
+#cat('numproc: ',  best + 1, "\n" )
+
+cat("\n\n\n\n\n")
+cat(best+1, "losses the least\nbut how many processors is optimal totalTimeVsCharge? ")
+best <- as.numeric(readline()) - 1
+
 
 # which possum nums do groups correspond to?
-substring( as.character(  times$poss_logfile[ allbins[[best]]$binidx[[1]]  ] ),  11)
+#substring( as.character(  times$poss_logfile[ allbins[[best]]$binidx[[1]]  ] ),  11)
+
+timetocomplete <- unlist(lapply(allbins[[best]]$binidx, function(x) { sum(times$expectedsec[x])/60**2 } ))
+totaltime <- max(timetocomplete)
+filename <- paste("finish-possum-with-",best+1,"-PBS.bash",sep="")
+sink(file=filename)
+cat(paste("#PBS -l ncpus=",best+1,sep=""),"\n" )
+cat(paste("#PBS -l walltime=",round(totaltime)+3,":00:00",sep=""),"\n" )
+cat("#PBS -q batch\n" )
+cat("source possumRun.bash\n" )
+cat( 
+  paste( '(',  
+            lapply(allbins[[best]]$binidx, function(x) { 
+               paste( 
+                 paste('possumRun', 
+                     substring( as.character(times$poss_logfile[x]),11), sep=" "), 
+                     collapse="; ")
+               }   
+             ), 
+          ')', collapse="&\n" ), 
+   "\n")
+cat( paste( '#', timetocomplete, 'hours', collapse="\n"), "\n")
+cat(paste("#",round(lost[[best]]),"hours lost to idle"),"\n" )
+sink()
+
+cat("wrote to ", filename,"\n")

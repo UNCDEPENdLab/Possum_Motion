@@ -1,3 +1,8 @@
+################################
+  \ls -1 *|grep -v 0001 | possumLogtime.pl  > possumTimes.txt
+  r -i generateParitions.R
+################################
+
 Possum divides its work up into a set number of jobs. The time required for each job to complete is variable. 
 
 After submitting to PBS, some have not finished either because the job takes an abnormally long time to finish

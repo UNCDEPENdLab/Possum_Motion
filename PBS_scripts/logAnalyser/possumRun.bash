@@ -1,11 +1,12 @@
 #!/usr/bin/env sh
 
 function possumRun { 
+   runum=$1
    echo -n "start: "; date
-   possum                               \
+   echo possum                               \
           --nproc=$TotalCPUs               \
           --procid=$jobID                  \
-          -o $SimOutDir/possum_${jobID}    \
+          -o $SimOutDir/possum_${runum}    \
           -m ${MotionFile}                 \
           -i ${BrainFile}                  \
           -x ${MRFile}                     \
@@ -13,7 +14,7 @@ function possumRun {
           -p ${PulseFile}                  \
           --activ4D=${ActivationFile}      \
           --activt4D=${ActivationTimeFile} \
-            > $LogFile 
+          #  > $LogFile 
    echo -n "finished: "; date
 }
 

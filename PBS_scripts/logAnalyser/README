@@ -1,6 +1,20 @@
 ################################
+
   \ls -1 *|grep -v 0001 | possumLogtime.pl  > possumTimes.txt
   r -i generateParitions.R
+  qsub -N "finish up possum" -v MotionFile=,...
+ 
+ ## need to provide 
+          $TotalCPUs
+          $jobID
+          $SimOutDir/possum_${runum}
+          ${MotionFile}
+          ${BrainFile}
+          ${MRFile}
+          ${RFFile}
+          ${PulseFile}
+          ${ActivationFile}
+          ${ActivationTimeFile}
 ################################
 
 Possum divides its work up into a set number of jobs. The time required for each job to complete is variable. 

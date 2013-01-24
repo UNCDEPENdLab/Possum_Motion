@@ -33,7 +33,6 @@
 
 # load magicPartition function
 # --- will use fill with biggests first naive algorithm 2/3 optimal :-/
-# would like to abstract this source so it will load from any directory
 source('biggestFillPartition.R')
 
 args <- commandArgs(TRUE)
@@ -60,7 +59,7 @@ allbins <- vector("list",n-2)
 for ( i in 2:(n-2) ) {
   desiredSum <- totalTime/i
   if(desiredSum < maxTime -10 ){
-    #cat(i,"processors: desired sum per processor", desiredSum, "is too small! max job time is ", maxTime,"breaking\n" )
+    cat("desired sum:", desiredSum, "too small!", " max is ", maxTime,"\n" )
     break
   }
 
@@ -86,8 +85,8 @@ best <- unname(which.min(lost))
 #cat('numproc: ',  best + 1, "\n" )
 print(df)
 cat("\n\n\n\n\n")
-cat(best+1, "loses the least\n")
-message("what number of processors optimizes total time vs charge time ? ")
+cat(best+1, "losses the least\n")
+message("how many processors givs optimal totalTimeVsCharge? ")
 best <- as.numeric(readLines("stdin",n=1)) - 1
 
 
@@ -111,7 +110,9 @@ cat(
             lapply(allbins[[best]]$binidx, function(x) { 
                paste( 
                  paste('possumRun', 
-                     substring( as.character(times$poss_logfile[x]),11), sep=" "), 
+                     substring( as.character(times$poss_logfile[x]),11),
+                     as.character(times$sim_cfg[x]), 
+                     sep=" "), 
                      collapse="; ")
                }   
              ), 
@@ -121,4 +122,4 @@ cat( paste( '#', timetocomplete, 'hours', collapse="\n"), "\n")
 cat(paste("#",round(lost[[best]]),"hours lost to idle"),"\n" )
 sink()
 
-#cat("wrote to ", filename,"\n")
+cat("wrote to ", filename,"\n")

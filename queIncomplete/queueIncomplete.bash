@@ -46,6 +46,7 @@ outdir=$scriptdir/finish_$(date +%F)
 mkdir -p $outdir
 
 for logdir in $logdirs/*/logs/; do
+  echo "**$logdir**"
   # what config file is used
   sim_cfg=$(basename $(dirname $logdir))
   sim_cfg=${sim_cfg%_*}
@@ -53,9 +54,13 @@ for logdir in $logdirs/*/logs/; do
   [ ! -r $HOME/Possum_Motion/sim_cfg/$sim_cfg ] && echo "Unknown $sim_cfg" && continue #&& exit 1
   
   # estimate run times of possum jobs
-  find $logdir -type f | egrep -v 0001 | $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
+  find $logdir -type f -name possumlog_\* | egrep -v 0001 | $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
   
 done
+
+# remove duplicate header from perl script
+sed -ie '1,1p;/^sim_cfg\tp/d' $outdir/possumTimes.txt
+
 
 if [ -r /usr/share/modules/init/sh ]; then
   echo 'loading R'

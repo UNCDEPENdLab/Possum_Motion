@@ -46,7 +46,7 @@ my $sim_cfg = $ARGV[0];
 print join("\t",qw(sim_cfg poss_logfile vox/s voxT0 voxT1 voxT2 expectedsec remainingsec knownExample)),"\n";
  
 #input should be log file names
-while(<>) {
+while(<STDIN>) {
  
  next if !$_ ;
  chomp;
@@ -56,11 +56,11 @@ while(<>) {
   print STDERR "$logfile DNE\n";
   next;
   }
- #print "looking at $_\n";
- my $ctime = stat($logfile)->ctime();
- my $mtime = stat($logfile)->mtime();
-
- my $lifeSecs=$mtime-$ctime;
+  ##print "looking at $_\n";
+  my $mtime = stat($logfile)->mtime();
+  #my $ctime = stat($logfile)->ctime();
+  #my $lifeSecs=$mtime-$ctime;
+ my $lifeSecs =0;
  if($lifeSecs <= 0 ) { 
   #print "WARN: ctime stamp on $_ is definetly not creation time (mtime-ctime=$lifeSecs s)\n";
 
@@ -114,6 +114,8 @@ while(<>) {
    $voxelsSeen=$lastVoxel if $lastVoxel > $voxelsSeen;
 
  }
+ # if we never saw a zend, this run never happened
+ $zend||=0;
 
 
  # to get num voxels for just that tissue type
@@ -149,7 +151,7 @@ while(<>) {
 
 
     my $totalExpectedTime = 0;
-    $totalExpectedTime = sprintf('%.1f', ($avgVox*3)/$voxPerSec ) if $lifeSecs>0;
+    $totalExpectedTime = sprintf('%.1f', ($avgVox*3)/$voxPerSec ) if $voxPerSec>0;
     my $remainingSec = $totalExpectedTime - $lifeSecs;
 
     #print "\naverage per tissue type is ${avgVox}vox (tot ",$avgVox*3," vox). Should take ${totalExpectedTime}s. already ${lifeSecs}s in\n";
@@ -159,7 +161,7 @@ while(<>) {
   print "\t$lifeSecs\t0";
   }
 
- print "\n"; # end line
+ print "\t0\n"; # end line
  
 
 }

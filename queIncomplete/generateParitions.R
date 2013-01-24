@@ -71,14 +71,14 @@ for ( i in 2:(n-2) ) {
 lost <- unlist(lapply(allbins, '[', 'totallost'))
 runtime <- unlist(lapply(allbins, '[', 'runtime'))
 
-library(ggplot2)
+#library(ggplot2)
 df<-data.frame(run=runtime,lost=lost,numProc=seq(2,n)[1:length(runtime)]  )
-p<- ggplot(data=df,aes(x=run,y=lost,label=numProc))+
-     geom_text()+theme_bw()+
-     ggtitle("run time vs lost time (hours)") +
-     scale_y_continuous(limits=c(0,200))
-x11()
-print(p)
+#p<- ggplot(data=df,aes(x=run,y=lost,label=numProc))+
+#     geom_text()+theme_bw()+
+#     ggtitle("run time vs lost time (hours)") +
+#     scale_y_continuous(limits=c(0,200))
+#x11()
+#print(p)
 
 # best  -- likely always to be grouping by 2 processors
 best <- unname(which.min(lost))
@@ -103,7 +103,7 @@ cat("#PBS -q batch\n" )
 cat("#PBS -j oe\n")
 cat("#PBS -M hallquistmn@upmc.edu\n")
 
-cat("simName=__simName__\n")
+#cat("simName=__simName__\n") # if all had the same configuration. They dont
 cat("source $(cd $(basename $0);pwd)/possumRun.bash\n" )
 cat( 
   paste( '(',  

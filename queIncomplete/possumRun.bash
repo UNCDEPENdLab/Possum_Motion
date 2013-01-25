@@ -13,17 +13,8 @@ motionDir=$inputDir/motion_parameters
 function dircheck   { eval   dirt=\$$1;    [ -d "$dirt"   ] || mkdir -p $dirt; }
 
 
-export LogDir="$SCRATCH/possum_rsfcmri/$simname/logs"
-export SimOutDir="$SCRATCH/possum_rsfcmri/$simname/output"
 
-#  check for log file, make if DNE
-dircheck "LogDir"
-dircheck "SimOutDir"
-
-echo "SIMRUN:     $SIMRUN"
 echo "SCRATCH:    $SCRATCH"
-echo "OutputDir:  $SimOutDir"
-echo "LogDir:     $LogDir"
 echo "Host:       $HOSTNAME"
 
 # assume these are all ready from sim_cfg .. which is loaded per possum process (rather than here, per job)
@@ -57,6 +48,8 @@ function possumRun {
    cfgfile="$HOME/Possum_Motion/sim_cfg/$SIMRUN"
    expectedRuntime=$3
 
+
+
    if [ -n "$SIMRUN" -a -r $cfgfile]; then
        source $cfgfile
        simname=${SIMRUN}_$(date +%d%b%Y-%R)
@@ -64,7 +57,19 @@ function possumRun {
        echo "$1: $cfgfile DNE!!!! dieing"
        return
    fi
+
+   LogDir="$SCRATCH/possum_rsfcmri/$simname/logs"
+   SimOutDir="$SCRATCH/possum_rsfcmri/$simname/output"
+
+   #  check for log file, make if DNE
+   dircheck "LogDir"
+   dircheck "SimOutDir"
+
    LogFile="$LogDir/possumlog_$1"
+
+   echo "OutputDir:  $SimOutDir"
+   echo "LogDir:     $LogDir"
+   echo "SIMRUN:     $SIMRUN"
 
 
    jobID_0=$(echo $1 - 1|bc)

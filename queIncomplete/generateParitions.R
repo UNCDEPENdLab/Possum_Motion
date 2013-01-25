@@ -65,7 +65,7 @@ maxTime   <- max(remain)
 
 
 allbins <- vector("list",n)
-for ( i in startNum:n ) {
+for ( i in seq(startNum,n,by=16) ) {
   desiredSum <- totalTime/i
   if(desiredSum < maxTime -10 ){
     cat("desired sum:", desiredSum, "too small!", " have  ", maxTime," hr job -- output will be funny\n" )
@@ -79,13 +79,13 @@ for ( i in startNum:n ) {
 lost <- unlist(lapply(allbins, '[', 'totallost'))
 runtime <- unlist(lapply(allbins, '[', 'runtime'))
 
-df<-data.frame(numProc=seq(startNum,n)[1:length(runtime)],run=runtime,lost=lost )
+df<-data.frame(numProc=seq(startNum,n,by=16)[1:length(runtime)],runtime=runtime,lost=lost )
 #todo, try catch on x11
 x11()
 library(ggplot2)
-p<- ggplot(data=df,aes(x=run,y=lost,label=numProc))+
+p<- ggplot(data=df,aes(x=runtime,y=lost,label=numProc))+
      geom_text()+theme_bw()+
-     ggtitle("run time vs lost time (hours)") +
+     ggtitle("run time vs lost time (hours)") 
      #scale_y_continuous(limits=c(0,200))
 print(p)
 
@@ -129,7 +129,7 @@ cat(
           ')', collapse="&\n" ), 
    "\n")
 cat( paste( '#', timetocomplete, 'hours', collapse="\n"), "\n")
-cat(paste("#",round(lost[[best]]),"hours lost to idle"),"\n" )
+cat(paste("#",round(lost[[best/16]]),"hours lost to idle"),"\n" )
 sink()
 
 cat("wrote to ", filename,"\n")

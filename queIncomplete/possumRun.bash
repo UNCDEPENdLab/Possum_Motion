@@ -68,6 +68,7 @@ function possumRun {
 
 
    jobID_0=$(echo $1 - 1|bc)
+   echo  "expected runtime: $expectedRuntime";
    echo -n "start: "; date
    echo possum                               \
            --nproc=$njobs \

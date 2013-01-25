@@ -40,6 +40,7 @@ maxTimehr <- 100 # largest job blacklight will do
 args <- commandArgs(TRUE)
 inputfilename <- args[1]
 outputfilname <- args[2]
+ncpusTouse    <- args[3]
 # change this file to read in others
 if(is.null(inputfilename) ){
   cat ("# ls 1 * | egrep -v 0001 | possumLogtime.pl > possumTimes.txt\n")
@@ -80,24 +81,28 @@ lost <- unlist(lapply(allbins, '[', 'totallost'))
 runtime <- unlist(lapply(allbins, '[', 'runtime'))
 
 df<-data.frame(numProc=seq(startNum,n,by=16)[1:length(runtime)],runtime=runtime,lost=lost )
-#todo, try catch on x11
-x11()
-library(ggplot2)
-p<- ggplot(data=df,aes(x=runtime,y=lost,label=numProc))+
-     geom_text()+theme_bw()+
-     ggtitle("run time vs lost time (hours)") 
-     #scale_y_continuous(limits=c(0,200))
-print(p)
-
-# best  -- likely always to be grouping by 2 processors
-best <- unname(which.min(lost))
-#cat('numproc: ',  best + 1, "\n" )
-print(df)
-cat("\n\n\n\n\n")
-#cat(best+startNum, "losses the least\n")
-message("how many processors givs optimal totalTimeVsCharge? ")
-best <- as.numeric(readLines("stdin",n=1)) 
-
+#if(is.null(ncpusTouse )) {
+  #todo, try catch on x11
+  #x11()
+  #library(ggplot2)
+  #p<- ggplot(data=df,aes(x=runtime,y=lost,label=numProc))+
+  #     geom_text()+theme_bw()+
+  #     ggtitle("run time vs lost time (hours)") 
+  #     #scale_y_continuous(limits=c(0,200))
+  #print(p)
+  
+  # best  -- likely always to be grouping by 2 processors
+  best <- unname(which.min(lost))
+  #cat('numproc: ',  best + 1, "\n" )
+  print(df)
+  cat("\n\n\n\n\n")
+  #cat(best+startNum, "losses the least\n")
+  message("how many processors givs optimal totalTimeVsCharge? ")
+  best <- as.numeric(readLines("stdin",n=1)) 
+#} else {
+# best <- ncpusTouse
+# cat('using', best,"\n")
+#}
 
 # which possum nums do groups correspond to?
 #substring( as.character(  times$poss_logfile[ allbins[[best]]$binidx[[1]]  ] ),  11)

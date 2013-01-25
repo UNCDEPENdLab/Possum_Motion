@@ -130,6 +130,7 @@ cat(
    "\n")
 cat( paste( '#', timetocomplete, 'hours', collapse="\n"), "\n")
 cat(paste("#",round(lost[[best/16]]),"hours lost to idle"),"\n" )
+cat('ja -chlst')
 sink()
 
 cat("wrote to ", filename,"\n")

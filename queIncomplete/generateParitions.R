@@ -121,9 +121,9 @@ cat(
                  paste('possumRun', 
                      substring( as.character(times$poss_logfile[x]),11),
                      as.character(times$sim_cfg[x]), 
-                     times$expectedsec/60**2, 
+                     times$expectedsec[x]/60**2, 
                      sep=" "), 
-                     collapse="; ")
+                     collapse=";\n\t ")
                }   
              ), 
           ')', collapse="&\n" ), 

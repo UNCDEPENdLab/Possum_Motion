@@ -50,11 +50,11 @@ function possumRun {
 
 
 
-   if [ -n "$SIMRUN" -a -r $cfgfile]; then
+   if [ -n "$SIMRUN" -a -r "$cfgfile" ]; then
        source $cfgfile
        simname=${SIMRUN}_$(date +%d%b%Y-%R)
    else
-       echo "$1: $cfgfile DNE!!!! dieing"
+       echo "$1: '$SIMRUN' '$cfgfile' DNE!!!! dieing"
        return
    fi
 

@@ -64,6 +64,8 @@ which ja && ja
 cleanup () {
     echo "Exiting script due to sigint/sigterm/exit"
     ja -chlst    
+    # remove running locks
+    rm $SimOutDir/running-*
     exit 0 #make sure the script exits and doesn't run another person
 }
 trap cleanup SIGINT SIGTERM
@@ -146,7 +148,12 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
            --activt4D=$activTime"
 
        echo "Start time: $(date +%d%b%Y-%R)" > $LogFile
+       echo "Start time epoch(s): $(date +%s)" >> $LogFile
        echo -e "${possumCmd}\n\n" >> $LogFile
+       
+       # touch a lock
+       date +%F_%R > $SimOutDir/running-$jobID
+        
        set -x
        #run the CMD by echoing within a command substitution
        #need tr to replace backslashes with a space to avoid escaping issues
@@ -178,6 +185,7 @@ echo "finished!"
 date
 
 ja -chlst
+rm $SimOutDir/running-*
 
 
 

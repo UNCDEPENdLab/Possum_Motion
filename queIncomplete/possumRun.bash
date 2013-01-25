@@ -121,6 +121,7 @@ function possumRun {
 
    echo "Expected runtime: $expectedRuntime" | tee $LogFile
    echo "Start time: $(date +%d%b%Y-%R)"     | tee -a $LogFile
+   echo "Start time epoch(s): $(date +%s)"   | tee -a $LogFile
    echo -e "${possumCmd}\n\n"                | tee -a $LogFile
    #run the CMD by echoing within a command substitution
    #need tr to replace backslashes with a space to avoid escaping issues

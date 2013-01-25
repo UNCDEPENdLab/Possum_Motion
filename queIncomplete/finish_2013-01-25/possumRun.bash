@@ -95,17 +95,18 @@ function possumRun {
    echo "LogDir:     $LogDir"
    echo "SIMRUN:     $SIMRUN"
 
-   function cleanup {
+   function cleanlog {
     if [ -r "$RunningLock" ]; then
       rm $RunningLock;
     else
       echo "$RunningLock DNE!!?";
     fi
    }
+
    # remove lock file if killed
    function cleanupresume {
     echo "$jobID did not finish! Caught SIGINT/TERM"
-    cleanup
+    cleanlog
    }
    trap cleanupresume SIGINT SIGTERM
 
@@ -137,9 +138,9 @@ function possumRun {
    echo -e "${possumCmd}\n\n"                | tee -a $LogFile
    #run the CMD by echoing within a command substitution
    #need tr to replace backslashes with a space to avoid escaping issues
-    #$( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile 
-   echo "sleeping instead of running possum!" && sleep 100
+    $( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile 
+   #echo "sleeping instead of running possum!" && sleep 100
    echo "Finished:  $(date +%F_%R)"         | tee -a $LogFile
-   cleanup
+   cleanlog
 }
 

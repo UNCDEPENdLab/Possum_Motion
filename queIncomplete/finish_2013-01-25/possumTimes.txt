@@ -392,6 +392,7 @@ sim_cfg	poss_logfile	vox/s	voxT0	voxT1	voxT2	expectedsec	remainingsec	knownExamp
 10895_nomot_fullFreq	possumlog_0254	0.000	0?	0?	0?	0	-163651	0
 10895_nomot_fullFreq	possumlog_0255	0.000	0?	0?	0?	0	-163710	0
 10895_nomot_fullFreq	possumlog_0256	0.000	0?	0?	0?	0	-163858	0
+10895_nomot_fullFreq	possumlog_0097.mvdOn2013-01-25_17:33	0.067	6905	2406	4152?	199798.5	35169.5	0
 10895_nomot_fullFreq	possumlog_0068	0.125	8343	8540	3467	162571	0	0
 10895_nomot_fullFreq	possumlog_0058	0.133	8768	6299	2017?	128279.7	9670.7	0
 10895_nomot_fullFreq	possumlog_0072	0.082	8306	8486?	8396?	306426.0	142045	0
@@ -425,7 +426,7 @@ sim_cfg	poss_logfile	vox/s	voxT0	voxT1	voxT2	expectedsec	remainingsec	knownExamp
 10895_nomot_fullFreq	possumlog_0131	0.061	8322	3723?	6022?	296993.5	132024.5	0
 10895_nomot_fullFreq	possumlog_0100	0.065	12681?	12681?	12681?	588838.4	423871.4	0
 10895_nomot_fullFreq	possumlog_0042	0.123	6385	2377	3366	98568	0	0
-10895_nomot_fullFreq	possumlog_0097	0.067	6905	2406	4152?	199798.5	35169.5	0
+10895_nomot_fullFreq	possumlog_0097	0.000	0?	0?	0?	0	-685130	0
 10895_nomot_fullFreq	possumlog_0018	0.000	0	0	0	429	0	0
 10895_nomot_fullFreq	possumlog_0127	0.058	8425	2671?	5548?	285890.1	121474.1	0
 10895_nomot_fullFreq	possumlog_0037	0.124	5110	1487	2388	72636	0	0

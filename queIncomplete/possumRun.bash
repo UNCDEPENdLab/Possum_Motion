@@ -95,17 +95,18 @@ function possumRun {
    echo "LogDir:     $LogDir"
    echo "SIMRUN:     $SIMRUN"
 
-   function cleanup {
+   function cleanlog {
     if [ -r "$RunningLock" ]; then
       rm $RunningLock;
     else
       echo "$RunningLock DNE!!?";
     fi
    }
+
    # remove lock file if killed
    function cleanupresume {
     echo "$jobID did not finish! Caught SIGINT/TERM"
-    cleanup
+    cleanlog
    }
    trap cleanupresume SIGINT SIGTERM
 
@@ -140,6 +141,6 @@ function possumRun {
     $( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile 
    #echo "sleeping instead of running possum!" && sleep 100
    echo "Finished:  $(date +%F_%R)"         | tee -a $LogFile
-   cleanup
+   cleanlog
 }
 

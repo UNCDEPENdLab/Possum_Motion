@@ -33,8 +33,9 @@
 
 # load magicPartition function
 # --- will use fill with biggests first naive algorithm 2/3 optimal :-/
-# would like to abstract this source so it will load from any directory
 source('biggestFillPartition.R')
+startNum  <- 16  # min num of processors to use
+maxTimehr <- 100 # largest job blacklight will do
 
 args <- commandArgs(TRUE)
 inputfilename <- args[1]
@@ -46,9 +47,15 @@ if(is.null(inputfilename) ){
   inputfilename <- readLines("stdin",n=1)
 }
 
-times.all <- read.table(inputfilename,header=T)
-times     <- times.all[times.all$remainingsec>0,]
-remain    <- times$expectedsec/60**2
+times.all   <- read.table(inputfilename,header=T)
+times.unfin <- times.all[times.all$remainingsec>0,]
+times       <- times.unfin[times.unfin$expectedsec/60**2<maxTimehr,]
+if(dim(times)[1]!=dim(times.unfin)[1]) {
+ cat("DROPPED jobs are expted to take over 100 hours\n")
+ print(times.unfin[times.unfin$expectedsec/60**2>=110,c('sim_cfg','poss_logfile','expectedsec')] )
+}
+
+remain      <- times$expectedsec/60**2
 # sort(remain,index.return=T)
 
 
@@ -56,15 +63,15 @@ n         <- length(remain)
 totalTime <- sum(remain)
 maxTime   <- max(remain)
 
-allbins <- vector("list",n-2)
-for ( i in 2:(n-2) ) {
+
+allbins <- vector("list",n)
+for ( i in seq(startNum,n,by=16) ) {
   desiredSum <- totalTime/i
   if(desiredSum < maxTime -10 ){
-    #cat(i,"processors: desired sum per processor", desiredSum, "is too small! max job time is ", maxTime,"breaking\n" )
-    break
+    cat("desired sum:", desiredSum, "too small!", " have  ", maxTime," hr job -- output will be funny\n" )
+    #break
   }
-
-  allbins[[i-1]] <- magicPartition(remain, i)
+  allbins[[i]] <- magicPartition(remain, i)
 }
 
 # hours that are expected to be lost for each grouping
@@ -72,13 +79,14 @@ for ( i in 2:(n-2) ) {
 lost <- unlist(lapply(allbins, '[', 'totallost'))
 runtime <- unlist(lapply(allbins, '[', 'runtime'))
 
-library(ggplot2)
-df<-data.frame(run=runtime,lost=lost,numProc=seq(2,n)[1:length(runtime)]  )
-p<- ggplot(data=df,aes(x=run,y=lost,label=numProc))+
-     geom_text()+theme_bw()+
-     ggtitle("run time vs lost time (hours)") +
-     scale_y_continuous(limits=c(0,200))
+df<-data.frame(numProc=seq(startNum,n,by=16)[1:length(runtime)],runtime=runtime,lost=lost )
+#todo, try catch on x11
 x11()
+library(ggplot2)
+p<- ggplot(data=df,aes(x=runtime,y=lost,label=numProc))+
+     geom_text()+theme_bw()+
+     ggtitle("run time vs lost time (hours)") 
+     #scale_y_continuous(limits=c(0,200))
 print(p)
 
 # best  -- likely always to be grouping by 2 processors
@@ -86,9 +94,9 @@ best <- unname(which.min(lost))
 #cat('numproc: ',  best + 1, "\n" )
 print(df)
 cat("\n\n\n\n\n")
-cat(best+1, "loses the least\n")
-message("what number of processors optimizes total time vs charge time ? ")
-best <- as.numeric(readLines("stdin",n=1)) - 1
+#cat(best+startNum, "losses the least\n")
+message("how many processors givs optimal totalTimeVsCharge? ")
+best <- as.numeric(readLines("stdin",n=1)) 
 
 
 # which possum nums do groups correspond to?
@@ -96,29 +104,32 @@ best <- as.numeric(readLines("stdin",n=1)) - 1
 
 timetocomplete <- unlist(lapply(allbins[[best]]$binidx, function(x) { sum(times$expectedsec[x])/60**2 } ))
 totaltime <- max(timetocomplete)
-filename <- paste(outputfilname, "finish-with-",best+1,"-PBS.bash",sep="")
+filename <- paste(outputfilname, "finish-with-",best,"-PBS.bash",sep="")
 sink(file=filename)
-cat(paste("#PBS -l ncpus=",best+1,sep=""),"\n" )
+cat(paste("#PBS -l ncpus=",best,sep=""),"\n" )
 cat(paste("#PBS -l walltime=",round(totaltime)+3,":00:00",sep=""),"\n" )
 cat("#PBS -q batch\n" )
 cat("#PBS -j oe\n")
 cat("#PBS -M hallquistmn@upmc.edu\n")
 
-cat("simName=__simName__\n")
+#cat("simName=__simName__\n") # if all had the same configuration. They dont
 cat("source $(cd $(basename $0);pwd)/possumRun.bash\n" )
 cat( 
   paste( '(',  
             lapply(allbins[[best]]$binidx, function(x) { 
                paste( 
                  paste('possumRun', 
-                     substring( as.character(times$poss_logfile[x]),11), sep=" "), 
-                     collapse="; ")
+                     substring( as.character(times$poss_logfile[x]),11),
+                     as.character(times$sim_cfg[x]), 
+                     times$expectedsec[x]/60**2, 
+                     sep=" "), 
+                     collapse=";\n\t ")
                }   
              ), 
           ')', collapse="&\n" ), 
    "\n")
 cat( paste( '#', timetocomplete, 'hours', collapse="\n"), "\n")
-cat(paste("#",round(lost[[best]]),"hours lost to idle"),"\n" )
+cat(paste("#",round(lost[[best/16]]),"hours lost to idle"),"\n" )
 sink()
 
-#cat("wrote to ", filename,"\n")
+cat("wrote to ", filename,"\n")

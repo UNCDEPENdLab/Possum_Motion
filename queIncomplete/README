@@ -3,6 +3,9 @@
   ./queueIncomplete.bash $logdirectory
   qsub -N "Finish Possum" finish_$logdirsBase/finish-with-#-PBS.bash
 
+  EG:
+  ./queueIncomplete.bash /brashear/hallquis/possum_rsfcmri/
+
   The above tries to simplify the outline
     * estimate possum job run times
        find $logdirectory -type f |grep -v 0001 | possumLogtime.pl  > possumTimes.txt

@@ -254,6 +254,7 @@ sim_cfg	poss_logfile	vox/s	voxT0	voxT1	voxT2	expectedsec	remainingsec	knownExamp
 10895_nomot_bandpass	possumlog_0245	0.000	0	0	0	63525	0	0
 10895_nomot_bandpass	possumlog_0246	0.000	0	0	0	63748	0	0
 10895_nomot_bandpass	possumlog_0250	0.000	0	0	0	64041	0	0
+sim_cfg	poss_logfile	vox/s	voxT0	voxT1	voxT2	expectedsec	remainingsec	knownExample
 10895_nomot_fullFreq	possumlog_0002	0.000	0	0	0	51	0	0
 10895_nomot_fullFreq	possumlog_0003	0.000	0	0	0	73	0	0
 10895_nomot_fullFreq	possumlog_0004	0.000	0	0	0	93	0	0
@@ -509,6 +510,7 @@ sim_cfg	poss_logfile	vox/s	voxT0	voxT1	voxT2	expectedsec	remainingsec	knownExamp
 10895_nomot_fullFreq	possumlog_0245	0.000	0	0	0	164977	0	0
 10895_nomot_fullFreq	possumlog_0246	0.000	0	0	0	165049	0	0
 10895_nomot_fullFreq	possumlog_0250	0.000	0	0	0	165514	0	0
+sim_cfg	poss_logfile	vox/s	voxT0	voxT1	voxT2	expectedsec	remainingsec	knownExample
 10895_nomot_roiAvg_bandpass	possumlog_0002	0.000	0	0	0	60	0	0
 10895_nomot_roiAvg_bandpass	possumlog_0003	0.000	0	0	0	88	0	0
 10895_nomot_roiAvg_bandpass	possumlog_0004	0.000	0	0	0	118	0	0
@@ -764,6 +766,7 @@ sim_cfg	poss_logfile	vox/s	voxT0	voxT1	voxT2	expectedsec	remainingsec	knownExamp
 10895_nomot_roiAvg_bandpass	possumlog_0245	0.000	0	0	0	39824	0	0
 10895_nomot_roiAvg_bandpass	possumlog_0246	0.000	0	0	0	39858	0	0
 10895_nomot_roiAvg_bandpass	possumlog_0250	0.000	0	0	0	40100	0	0
+sim_cfg	poss_logfile	vox/s	voxT0	voxT1	voxT2	expectedsec	remainingsec	knownExample
 10895_nomot_roiAvg_fullFreq	possumlog_0004	0.000	0	0	0	73	0	0
 10895_nomot_roiAvg_fullFreq	possumlog_0008	0.000	0	0	0	95	0	0
 10895_nomot_roiAvg_fullFreq	possumlog_0002	0.000	0	0	0	58	0	0

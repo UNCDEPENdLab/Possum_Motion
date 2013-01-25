@@ -5,13 +5,13 @@
 #  second and third ? are averages of seen and estimated (b/c that tissue type is never in the log)
 #
 # OUTPUT SNIP
-#   poss_logfile     vox/s voxT0 voxT1 voxT2 expectedsec remainingsec
-#   possumlog_0151   0.203 6804  2616  3903  65681        0
-#   possumlog_0152   0.082 8147? 8147? 8147? 298636.6     219850.6
-#                          ^      ^     ^      ^
-#    partly seen, rest est-|      |     |      |
-#    never seen, totally made up--|-----|      |
-#    based on only a few zz steps that were avaliable in in tisue type 0
+#           poss_logfile     vox/s voxT0 voxT1 voxT2 expectedsec remainingsec
+#   sim_cfg possumlog_0151   0.203 6804  2616  3903  65681        0
+#   sim_cfg possumlog_0152   0.082 8147? 8147? 8147? 298636.6     219850.6
+#                                ^      ^     ^      ^
+#          partly seen, rest est-|      |     |      |
+#          never seen, totally made up--|-----|      |
+#          based on only a few zz steps that were avaliable in in tisue type 0
 #
 # NOTE: error in vox per second calcuation
 #
@@ -20,6 +20,10 @@
 #
 # currently uses first log file mod time as creation time of every file
 #
+
+## TODO:
+#  * make hash of finished times for when lifeSecs is 0 (hasn't started)
+#  * make hash of qsub so currently processed jobs dont get added?
 
 use strict; use warnings;
 # easily find stat info by name
@@ -34,10 +38,15 @@ use File::Glob ':glob';
 # undefined until needed
 my $log1mtime;
 
-print join("\t",qw(poss_logfile vox/s voxT0 voxT1 voxT2 expectedsec remainingsec)),"\n";
+die "need first argument to be sim_cfg" if $#ARGV<0;
+
+my $sim_cfg = $ARGV[0];
+
+
+print join("\t",qw(sim_cfg poss_logfile vox/s voxT0 voxT1 voxT2 expectedsec remainingsec knownExample)),"\n";
  
 #input should be log file names
-while($_=shift(@ARGV) or $_=<> ) {
+while(<STDIN>) {
  
  next if !$_ ;
  chomp;
@@ -47,11 +56,11 @@ while($_=shift(@ARGV) or $_=<> ) {
   print STDERR "$logfile DNE\n";
   next;
   }
- #print "looking at $_\n";
- my $ctime = stat($logfile)->ctime();
- my $mtime = stat($logfile)->mtime();
-
- my $lifeSecs=$mtime-$ctime;
+  ##print "looking at $_\n";
+  my $mtime = stat($logfile)->mtime();
+  #my $ctime = stat($logfile)->ctime();
+  #my $lifeSecs=$mtime-$ctime;
+ my $lifeSecs =0;
  if($lifeSecs <= 0 ) { 
   #print "WARN: ctime stamp on $_ is definetly not creation time (mtime-ctime=$lifeSecs s)\n";
 
@@ -105,6 +114,8 @@ while($_=shift(@ARGV) or $_=<> ) {
    $voxelsSeen=$lastVoxel if $lastVoxel > $voxelsSeen;
 
  }
+ # if we never saw a zend, this run never happened
+ $zend||=0;
 
 
  # to get num voxels for just that tissue type
@@ -114,9 +125,10 @@ while($_=shift(@ARGV) or $_=<> ) {
   $voxPerTissue[$i]-=$voxPerTissue[$i-1]
  }
 
- my $voxPerSec = $voxelsSeen/$lifeSecs; 
+ my $voxPerSec = 0;
+ $voxPerSec = $voxelsSeen/$lifeSecs if $lifeSecs>0;
  #print "\n\nhave seen ${voxelsSeen}vox (@voxPerTissue) in ${lifeSecs}s, rate=$voxPerSec\n";
- print join("\t", basename($logfile), sprintf("%.3f",$voxPerSec) , @voxPerTissue);
+ print join("\t", $sim_cfg, basename($logfile), sprintf("%.3f",$voxPerSec) , @voxPerTissue);
 
  if( ! $finished) {
     my $remainingTissues=3-$tissueTypesSeen;
@@ -138,7 +150,8 @@ while($_=shift(@ARGV) or $_=<> ) {
     print "\t", join("\t", ($avgVox."?")x(2 - ($#voxPerTissue+1) )) if $#voxPerTissue < 1;
 
 
-    my $totalExpectedTime = sprintf('%.1f', ($avgVox*3)/$voxPerSec ) ;
+    my $totalExpectedTime = 0;
+    $totalExpectedTime = sprintf('%.1f', ($avgVox*3)/$voxPerSec ) if $voxPerSec>0;
     my $remainingSec = $totalExpectedTime - $lifeSecs;
 
     #print "\naverage per tissue type is ${avgVox}vox (tot ",$avgVox*3," vox). Should take ${totalExpectedTime}s. already ${lifeSecs}s in\n";
@@ -148,7 +161,7 @@ while($_=shift(@ARGV) or $_=<> ) {
   print "\t$lifeSecs\t0";
   }
 
- print "\n"; # end line
+ print "\t0\n"; # end line
  
 
 }

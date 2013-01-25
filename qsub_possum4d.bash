@@ -4,15 +4,15 @@
 ### options for pbs ###
 ###                 ###
 
-#PBS -l ncpus=256
-#PBS -l walltime=18:00:00
+#PBS -l ncpus=112
+#PBS -l walltime=46:00:00
 #PBS -q batch
 #PBS -j oe
 #PBS -M hallquistmn@upmc.edu
 
 source /usr/share/modules/init/bash
 
-ncpus=16
+ncpus=112
 njobs=256
 
 inputDir=$HOME/Possum_Motion/defaults
@@ -60,6 +60,13 @@ export PATH FSLOUTPUTTYPE
 [ ! -f $inputDir/tr2_te30_pulse ] && bash $inputDir/default_pulse.bash
 
 which ja && ja
+
+cleanup () {
+    echo "Exiting script due to sigint/sigterm/exit"
+    ja -chlst    
+    exit 0 #make sure the script exits and doesn't run another person
+}
+trap cleanup SIGINT SIGTERM
 
 for ((jobID=1; jobID <= njobs ; jobID++)); do
 
@@ -138,9 +145,10 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
            --activ4D=$activ4D \\
            --activt4D=$activTime"
 
-       echo -e "${possumCmd}\n\n" > $LogFile
+       echo "Start time: $(date +%d%b%Y-%R)" > $LogFile
+       echo -e "${possumCmd}\n\n" >> $LogFile
        set -x
-       #run the CMD by echoing within a command substitutiont
+       #run the CMD by echoing within a command substitution
        #need tr to replace backslashes with a space to avoid escaping issues
        $( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile &
        set +x

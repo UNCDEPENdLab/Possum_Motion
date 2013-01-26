@@ -55,7 +55,8 @@ if(dim(times)[1]!=dim(times.unfin)[1]) {
  print(times.unfin[times.unfin$expectedsec/60**2>=110,c('sim_cfg','poss_logfile','expectedsec')] )
 }
 
-remain      <- times$expectedsec/60**2
+remain      <- max(times$expectedsec,times$knownExample)/60**2
+remain[is.na(remain)] <- mean(times$expectedsec)
 # sort(remain,index.return=T)
 
 

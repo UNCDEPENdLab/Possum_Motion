@@ -53,7 +53,8 @@ while(<STDIN>) {
  my $logfile=$_;
  #print "$_ not a log file! (.log\$)" && next if ! m/.log$/;
  if(! -e $logfile) {
-  print STDERR "$logfile DNE\n";
+  #print STDERR "$logfile DNE\n";
+  print join("\t",$sim_cfg, basename($logfile), ('0?')x4,'NA',-1,0),"\n";
   next;
   }
   ##print "looking at $_\n";

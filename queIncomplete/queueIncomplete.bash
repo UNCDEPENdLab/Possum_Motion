@@ -33,6 +33,7 @@
 ##END
 
 set -e 
+ncpus=256
 # print help/usage if unexpected input
 [[ -z "$1" || ! -d "$1" ]] && sed -n "/##END/q;s:\$0:$0:g;s/^## //p" $0 && exit 1
 
@@ -54,7 +55,11 @@ for logdir in $logdirs/*/logs/; do
   [ ! -r $HOME/Possum_Motion/sim_cfg/$sim_cfg ] && echo "Unknown $sim_cfg" && continue #&& exit 1
   
   # estimate run times of possum jobs
-  find $logdir -type f -name possumlog_\* | egrep -v 0001 | $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
+  #find $logdir -type f -name possumlog_\* | egrep -v 0001 | $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
+  # we probably know the exact structure, so lets do that insted of globbing
+  
+  perl -e "print '$logdir/possumlog_'.sprintf('%04',\$_) for (2...$ncpus)" |
+    $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
   
 done
 
@@ -73,7 +78,8 @@ fi
 
 # need to be here for source command
 cd $scriptdir
-Rscript $scriptdir/generateParitions.R "$outdir/possumTimes.txt" "$outdir/"
+Rscript $scriptdir/blockTimes.R "$outdir/possumTimes.txt" "$outdir/possumTime_withExp.txt"
+Rscript $scriptdir/generateParitions.R "$outdir/possumTime_withExp.txt" "$outdir/"
 
 # change 
 cd $outdir

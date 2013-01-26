@@ -207,3 +207,5 @@ source $(cd $(basename $0);pwd)/possumRun.bash
 # 0 hours
 # 0 hours 
 # 2396 hours lost to idle 
+wait
+ja -chlst

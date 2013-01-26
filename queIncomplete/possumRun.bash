@@ -63,7 +63,7 @@ function possumRun {
        source $cfgfile
        # simname should wild card complete
        # to get the the date
-       simname=$SCRATCH/possum_rsfcmri/${SIMRUN}_*
+       simname=$(ls -1d $SCRATCH/possum_rsfcmri/${SIMRUN}_* |sed 1q)
 
        # check we completed the above
        if [ ! -d "$simname" ]; then
@@ -89,20 +89,24 @@ function possumRun {
    RunningLock=$SimOutDir/running-$jobID
 
    # move old log file if it exists (it should!)
-   [ -r $Logfile ] && mv $Logfile ${Logfile}.mvdOn$(date +%F_%R)
+   [ -r $LogFile ] && mv $LogFile ${LogFile}.mvdOn$(date +%F_%R)
 
    echo "OutputDir:  $SimOutDir"
    echo "LogDir:     $LogDir"
    echo "SIMRUN:     $SIMRUN"
 
-   # remove lock file if killed
-   function cleanupresume {
-    echo "$jobID did not finish! Caught SIGINT/TERM"
-    if [ -r $RunningLock]; then
+   function cleanlog {
+    if [ -r "$RunningLock" ]; then
       rm $RunningLock;
     else
       echo "$RunningLock DNE!!?";
     fi
+   }
+
+   # remove lock file if killed
+   function cleanupresume {
+    echo "$jobID did not finish! Caught SIGINT/TERM"
+    cleanlog
    }
    trap cleanupresume SIGINT SIGTERM
 
@@ -119,15 +123,24 @@ function possumRun {
            --activ4D=$activ4D \\
            --activt4D=$activTime"
 
-   echo "Expected runtime: $expectedRuntime" | tee $LogFile
+   if [ -r $RunningLock ]; then
+    echo "$RunningLock exists! not running"
+    return
+   fi
+
+   # touch run log
+   date +%F_%R > $RunningLock
+
+   echo "Lock on $RunningLock"               | tee $LogFile
+   echo "Expected runtime: $expectedRuntime" | tee -a $LogFile
    echo "Start time: $(date +%d%b%Y-%R)"     | tee -a $LogFile
    echo "Start time epoch(s): $(date +%s)"   | tee -a $LogFile
    echo -e "${possumCmd}\n\n"                | tee -a $LogFile
    #run the CMD by echoing within a command substitution
    #need tr to replace backslashes with a space to avoid escaping issues
-   date +%F_%R > $RunningLock
-   $( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile 
+    $( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile 
+   #echo "sleeping instead of running possum!" && sleep 100
    echo "Finished:  $(date +%F_%R)"         | tee -a $LogFile
-   rm $RunningLock
+   cleanlog
 }
 

@@ -39,22 +39,42 @@ export PATH FSLOUTPUTTYPE
 
 which ja && ja
 
+cleanup () {
+    echo "Exiting script due to sigint/sigterm/exit"
+    ja -chlst    
+    exit 1
+}
+trap cleanup SIGINT SIGTERM
 
 
 ## RUN FUNCTION 
 # possum log numbers start at one, proc ids start at 0
 function possumRun { 
+   jobID=$1
    SIMRUN=$2
    cfgfile="$HOME/Possum_Motion/sim_cfg/$SIMRUN"
    expectedRuntime=$3
 
-
+   if [ -z "$jobID" ]; then
+       echo "no jobID (first argument); quiting"
+   fi
 
    if [ -n "$SIMRUN" -a -r "$cfgfile" ]; then
        source $cfgfile
-       simname=${SIMRUN}_$(date +%d%b%Y-%R)
+       # simname should wild card complete
+       # to get the the date
+       simname=$(ls -1d $SCRATCH/possum_rsfcmri/${SIMRUN}_* |sed 1q)
+
+       # check we completed the above
+       if [ ! -d "$simname" ]; then
+         echo "cannot find simname's date!: $simname"
+         return
+       fi
+
+       # dont want dirname in the simulation name (we just wanted the date)
+       simname=$(basename $simname /)
    else
-       echo "$1: '$SIMRUN' '$cfgfile' DNE!!!! dieing"
+       echo "$jobID: '$SIMRUN' undefed or '$cfgfile' DNE!!!! dieing"
        return
    fi
 
@@ -65,28 +85,62 @@ function possumRun {
    dircheck "LogDir"
    dircheck "SimOutDir"
 
-   LogFile="$LogDir/possumlog_$1"
+   LogFile="$LogDir/possumlog_$jobID"
+   RunningLock=$SimOutDir/running-$jobID
+
+   # move old log file if it exists (it should!)
+   [ -r $LogFile ] && mv $LogFile ${LogFile}.mvdOn$(date +%F_%R)
 
    echo "OutputDir:  $SimOutDir"
    echo "LogDir:     $LogDir"
    echo "SIMRUN:     $SIMRUN"
 
+   function cleanlog {
+    if [ -r "$RunningLock" ]; then
+      rm $RunningLock;
+    else
+      echo "$RunningLock DNE!!?";
+    fi
+   }
 
-   jobID_0=$(echo $1 - 1|bc)
-   echo  "expected runtime: $expectedRuntime";
-   echo -n "start: "; date
-   echo possum                               \
-           --nproc=$njobs \
-           --procid=$jobID_0 \
-           -o $SimOutDir/possum_${jobID_0} \
-           -m $motion \
-           -i $t1input \
-           -x $mrPar \
-           -f $slcprof \
-           -p $pulse \
-           --activ4D=$activ4D \
-           --activt4D=$activTime \
-           \> $LogFile 
-   echo -n "finished: "; date
+   # remove lock file if killed
+   function cleanupresume {
+    echo "$jobID did not finish! Caught SIGINT/TERM"
+    cleanlog
+   }
+   trap cleanupresume SIGINT SIGTERM
+
+   jobID_0=$(echo $jobID - 1|bc)
+   possumCmd="possum \\
+           --nproc=$njobs \\
+           --procid=$jobID_0 \\
+           -o $SimOutDir/possum_${jobID_0} \\
+           -m $motion \\
+           -i $t1input \\
+           -x $mrPar \\
+           -f $slcprof \\
+           -p $pulse \\
+           --activ4D=$activ4D \\
+           --activt4D=$activTime"
+
+   if [ -r $RunningLock ]; then
+    echo "$RunningLock exists! not running"
+    return
+   fi
+
+   # touch run log
+   date +%F_%R > $RunningLock
+
+   echo "Lock on $RunningLock"               | tee $LogFile
+   echo "Expected runtime: $expectedRuntime" | tee -a $LogFile
+   echo "Start time: $(date +%d%b%Y-%R)"     | tee -a $LogFile
+   echo "Start time epoch(s): $(date +%s)"   | tee -a $LogFile
+   echo -e "${possumCmd}\n\n"                | tee -a $LogFile
+   #run the CMD by echoing within a command substitution
+   #need tr to replace backslashes with a space to avoid escaping issues
+    $( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile 
+   #echo "sleeping instead of running possum!" && sleep 100
+   echo "Finished:  $(date +%F_%R)"         | tee -a $LogFile
+   cleanlog
 }
 

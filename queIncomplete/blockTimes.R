@@ -10,7 +10,7 @@ library(reshape2)
 
 args <- commandArgs(TRUE)
 inputfilename <- args[1]
-outputfilname <- args[2]
+outputfilename <- args[2]
 
 a<-read.table(header=T, file=inputfilename)
 
@@ -30,6 +30,8 @@ a$poss_logfile <- as.numeric(substring(levels(a$poss_logfile),11))
 #levels(a$sim_cfg) <- c('bp','ff','avgbp','avgff')
 times <-subset(a,subset=remainingsec==0,select=c('sim_cfg','poss_logfile','expectedsec')) 
 voxels <-subset(a,subset=remainingsec==0,select=c('sim_cfg','poss_logfile','voxsum')) 
+
+a<-a[,-which('voxsum' == names(a))]
 
 
 names(times)[2] <- 'block'
@@ -55,7 +57,7 @@ names(knownExample) <- c('poss_logfile','sim_cfg','knownExample')
 
 a<-a[,-which('knownExample' == names(a))]
 
-newA <- merge(a,knownExample)
+newA <- merge(a,knownExample,by=c('sim_cfg','poss_logfile'),sort=F)
 
 names(voxels)[2] <- 'block'
 wide<-reshape(voxels,direction='wide', timevar='sim_cfg', idvar='block')
@@ -65,7 +67,7 @@ voxplot <- ggplot(long,aes(x=block,y=value,group=variable,color=variable))+geom_
 voxcount<-rowMeans(wide[,1:4],na.rm=T)
 
 newA$poss_logfile <- sprintf('possumlog_%04d', a$poss_logfile)
-write.table(sep="\t",newA, file=outputfilname, quote=F,row.names=F)
+write.table(sep="\t",newA, file=outputfilename, quote=F,row.names=F)
 
 
 

@@ -39,7 +39,7 @@ maxTimehr <- 100 # largest job blacklight will do
 
 args <- commandArgs(TRUE)
 inputfilename <- args[1]
-outputfilname <- args[2]
+outputfilename <- args[2]
 ncpusTouse    <- args[3]
 # change this file to read in others
 if(is.null(inputfilename) ){
@@ -49,15 +49,15 @@ if(is.null(inputfilename) ){
 }
 
 times.all   <- read.table(inputfilename,header=T)
-times.unfin <- times.all[times.all$remainingsec>0,]
+times.unfin <- times.all[times.all$remainingsec!=0,]
 times       <- times.unfin[times.unfin$expectedsec/60**2<maxTimehr,]
 if(dim(times)[1]!=dim(times.unfin)[1]) {
  cat("DROPPED jobs are expted to take over 100 hours\n")
  print(times.unfin[times.unfin$expectedsec/60**2>=110,c('sim_cfg','poss_logfile','expectedsec')] )
 }
 
-remain      <- max(times$expectedsec,times$knownExample)/60**2
-remain[is.na(remain)] <- mean(times$expectedsec)
+remain      <- apply(cbind(times$expectedsec,times$knownExample)/60**2,1,max,na.rm=T)
+remain[remain==-Inf] <- 40 #mean(times$expectedsec[times$expectedsec>1*60^2],na.rm=T)/60**2
 # sort(remain,index.return=T)
 
 
@@ -110,7 +110,7 @@ df<-data.frame(numProc=seq(startNum,n,by=16)[1:length(runtime)],runtime=runtime,
 
 timetocomplete <- unlist(lapply(allbins[[best]]$binidx, function(x) { sum(times$expectedsec[x])/60**2 } ))
 totaltime <- max(timetocomplete)
-filename <- paste(outputfilname, "finish-with-",best,"-PBS.bash",sep="")
+filename <- paste(outputfilename, "finish-with-",best,"-PBS.bash",sep="")
 sink(file=filename)
 cat(paste("#PBS -l ncpus=",best,sep=""),"\n" )
 cat(paste("#PBS -l walltime=",round(totaltime)+3,":00:00",sep=""),"\n" )

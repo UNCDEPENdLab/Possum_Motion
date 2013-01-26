@@ -51,7 +51,7 @@ for(n in grep('t', names(d), value=T)) {
 }
 
 knownExample <- reshape(guess,direction='long',varying=names(guess)[-1])[,c('block','time','t')]
-names(knownExample) <- c('possum_logfile','sim_cfg','knownExample')
+names(knownExample) <- c('poss_logfile','sim_cfg','knownExample')
 
 a<-a[,-which('knownExample' == names(a))]
 

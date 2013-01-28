@@ -43,7 +43,7 @@ logdirs=$(cd $1; pwd)
 
 # output
 outdir=$scriptdir/finish_$(date +%F)
-[ -d $outdir ] &&  rm -r $outdir
+[ -d $outdir ] &&  rm -r $outdir   # removed because we always append to possumTimes.txt
 mkdir -p $outdir
 
 for logdir in $logdirs/*/logs/; do

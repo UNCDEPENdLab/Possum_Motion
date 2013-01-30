@@ -144,6 +144,15 @@ if [ ! -r func_to_mprage.mat ]; then
 	-interp sinc -sincwidth 7 -sincwindow hanning
 fi
 
+#warp raw POSSUM output to subject template (MNI)
+flirt -in ${funcFile} \
+    -ref ${templateT1} \
+    -out w${funcFile} \
+    -applyxfm -init func_to_mprage.mat \
+    -interp sinc
+
+exit 1
+
 #warp subject mask to 3mm MNI-POSSUM brain using NN
 #shouldn't matter whether MNI template or 10653 since ref is just used for image geometry
 flirt -in ${procprefix:1}_mean_${funcFile}_mask \

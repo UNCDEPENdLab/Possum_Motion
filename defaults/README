@@ -1,0 +1,7 @@
+For the 4d activation time course, begin simulating RS-fcMRI data at 16 seconds.
+    - 0 2 4 6 8: Steady state magnetization being established -- T2* static still settling down
+    - 10 12 14: Use the average of these 3 volumes to scale the percent signal change from the output.
+    - 16 -- 314: Resting-state activation
+    - 316 318 320 322: signal fall-off
+
+Total volumes: 162 (5 for static T2*, 3 for baseline, 150 RS-fcMRI, 4 for fall-off)

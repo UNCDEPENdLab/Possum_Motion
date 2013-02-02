@@ -1,0 +1,13 @@
+if [ ! -r "$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq_x5.nii.gz" ]; then
+   3dcalc -a "$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq.nii.gz" -expr 'a*5' \
+   	  -prefix "$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq_x5.nii.gz"
+fi
+
+simName="10895_nomot_roiAvg_fullFreq_x5"
+motion="$motionDir/zeromotion"
+t1input="$inputDir/possum_10895_fast.nii.gz"
+activ4D="$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq_x5.nii.gz"
+activTime="$inputDir/activt_150"
+mrPar="$inputDir/MRpar_3T"
+slcprof="$inputDir/slcprof"
+pulse="$inputDir/tr2_te30_pulse"

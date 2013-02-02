@@ -32,6 +32,15 @@ actInput.meanOnly <- actInput[,grepl("^Mean", names(actInput), perl=TRUE)]
 act_x_time <- outer(as.numeric(time3d.2TR$actMult), as.numeric(actInput.meanOnly))
 colnames(act_x_time) <- names(actInput.meanOnly)
 
+#just look at range of input values
+act3d.inputsummary <- aaply(act_x_time, 2, function(roi) {
+  roi <- t(roi) #convert to column vector
+  return(c(minAct=min(roi), maxAct=max(roi), medAct=median(roi), iqrAct=IQR(roi)))
+})
+
+act3d.agg <- aaply(act3d.inputsummary, 2, mean)
+
+
 #obtain estimated t2* for each timepoint
 act_x_time.t2ms <- act_x_time * 1000 + t2s_static #add t2*static and bring back to ms
 

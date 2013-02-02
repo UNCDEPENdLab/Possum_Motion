@@ -3,7 +3,7 @@
 #PBS -q batch
 #PBS -j oe
 #PBS -M hallquistmn@upmc.edu
-source $(cd $(basename $0);pwd)/possumRun.bash
+source $PBS_O_WORKDIR/possumRun.bash
 ( possumRun 0097 10895_nomot_fullFreq 55.4995833333333 )&
 ( possumRun 0162 10895_nomot_fullFreq 53.8008611111111 )&
 ( possumRun 0163 10895_nomot_fullFreq 53.3930277777778 )&

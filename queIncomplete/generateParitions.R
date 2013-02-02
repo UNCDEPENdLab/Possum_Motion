@@ -119,7 +119,7 @@ cat("#PBS -j oe\n")
 cat("#PBS -M hallquistmn@upmc.edu\n")
 
 #cat("simName=__simName__\n") # if all had the same configuration. They dont
-cat("source $(cd $(dirname $0);pwd)/possumRun.bash\n" )
+cat("source $PBS_O_WORKDIR/possumRun.bash\n" )
 cat( 
   paste( '(',  
             lapply(allbins[[best]]$binidx, function(x) { 

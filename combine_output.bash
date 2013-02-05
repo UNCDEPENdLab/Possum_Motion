@@ -26,10 +26,11 @@ inputDir=$HOME/Possum_Motion/defaults
 
 #ls -d "${SimOutBase}/${SimRun}"*
 #echo $?
-
-if ls -d "${SimOutBase}/${SimRun}"* > /dev/null 2>&1; then
-    SimOutDir=$( ls -d "${SimOutBase}/${SimRun}"* )
-else 
+SimOutDir=$(
+   ls -d "${SimOutBase}/${SimRun}_[0-9][0-9][A-Z]*" 2>/dev/null |
+   perl -lne "print if m:/${SimRun}_\d{2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec):"
+)
+if [ -z "$SimOutDir" ]; then
     echo "Unable to locate output directory for simulation config: $SimRun"
     exit 1
 fi

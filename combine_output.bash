@@ -27,7 +27,7 @@ inputDir=$HOME/Possum_Motion/defaults
 #ls -d "${SimOutBase}/${SimRun}"*
 #echo $?
 SimOutDir=$(
-   ls -d "${SimOutBase}/${SimRun}_[0-9][0-9][A-Z]*" 2>/dev/null |
+   ls -d "${SimOutBase}/${SimRun}_"[0-9][0-9][A-Z]* 2>/dev/null |
    perl -lne "print if m:/${SimRun}_\d{2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec):"
 )
 if [ -z "$SimOutDir" ]; then

@@ -5,15 +5,17 @@
 ###                 ###
 
 #PBS -l ncpus=112
-#PBS -l walltime=46:00:00
+#PBS -l walltime=48:00:00
 #PBS -q batch
 #PBS -j oe
 #PBS -M hallquistmn@upmc.edu
 
+#To test a POSSUM run, qsub with the TEST option in the debug queue. For example,
+#  qsub -l walltime=15:00 -l ncpus=16 -q debug -v TEST=1,SIMRUN=10895_nomot_roiAvg_fullFreq_x5 qsub_possum4d.bash
+
 source /usr/share/modules/init/bash
 
-ncpus=112
-njobs=256
+ncpus=$PBS_NCPUS #set number of jobs to be run equal to cpus requested for qsub
 
 inputDir=$HOME/Possum_Motion/defaults
 motionDir=$inputDir/motion_parameters
@@ -48,6 +50,7 @@ echo "Host:       $HOSTNAME"
 [ -z "$mrPar" ] && mrPar="$inputDir/MRpar_3T"
 [ -z "$slcprof" ] && slcprof="$inputDir/slcprof"
 [ -z "$pulse" ] && pulse="$inputDir/tr2_te30_pulse"
+[ -z "$njobs" ] && njobs=384 #allow njobs to be passed with qsub -v
 
 ##############################
 ### Possum for each job id ###

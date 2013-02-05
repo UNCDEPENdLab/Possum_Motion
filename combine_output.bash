@@ -18,6 +18,11 @@ done
 [ -z "$SimRun" ] && echo "Must specify simulation configuration: -sim_cfg <string>." && exit 1
 [ -z "$pulse" ] && echo "Must specify pulse file basename: -pulse <string>" && exit 1
 
+#allow -sim_cfg and -pulse to include directory (which will be stripped).
+#makes it a bit easier to use bash completion to call the script.
+SimRun=$( basename $SimRun )
+pulse=$( basename $pulse )
+
 inputDir=$HOME/Possum_Motion/defaults
 
 #use return code from ls to determine if output directory exists.
@@ -34,6 +39,8 @@ else
     exit 1
 fi
 
+echo "outdir: $SimOutDir"
+
 noutputs=$( find $SimOutDir/output -iname "possum_*" -type f | wc -l )
 
 if [ $noutputs -ne $njobs ]; then
@@ -41,13 +48,12 @@ if [ $noutputs -ne $njobs ]; then
     exit 1
 fi
 
-echo "outdir: $SimOutDir"
 echo "noutputs: $noutputs"
 
 [ ! -d "${SimOutDir}/combined" ] && mkdir "${SimOutDir}/combined"
 
 possum_sum -i ${SimOutDir}/output/possum_ -o ${SimOutDir}/combined/possum_combined -n ${njobs} -v 2>&1          |
-   tee $SimOutDir/logs/possum_sum-$(date +%F).log
+   tee $SimOutDir/combined/possum_sum-$(date +%F).log
 
 signal2image -i ${SimOutDir}/combined/possum_combined -a --homo -p $inputDir/$pulse -o "${SimOutDir}/combined/${SimRun}_possum_simt2" |
-   tee $SimOutDir/logs/signal2image-$(date +%F).log
+   tee $SimOutDir/combined/signal2image-$(date +%F).log

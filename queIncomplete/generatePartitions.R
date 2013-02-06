@@ -68,7 +68,7 @@ if(length(overidx)>0) {
 # sort(remain,index.return=T)
 
 # change expectedsec to what we calculated with remain
-times$expectedsec <- remain
+times$expectedsec <- remain*60**2
 
 n         <- length(remain)
 totalTime <- sum(remain)

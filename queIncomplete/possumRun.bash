@@ -5,7 +5,7 @@
 
 source /usr/share/modules/init/bash
 
-njobs=256
+
 
 inputDir=$HOME/Possum_Motion/defaults
 motionDir=$inputDir/motion_parameters
@@ -77,6 +77,9 @@ function possumRun {
        echo "$jobID: '$SIMRUN' undefed or '$cfgfile' DNE!!!! dieing"
        return
    fi
+
+   # jobs should be sourced from cfg. otherwise default to 256
+   [ -z "$njobs" ] && echo "WARNING: njobs was never set!!" && njobs=384
 
    LogDir="$SCRATCH/possum_rsfcmri/$simname/logs"
    SimOutDir="$SCRATCH/possum_rsfcmri/$simname/output"

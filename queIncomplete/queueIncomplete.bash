@@ -59,7 +59,7 @@ for logdir in $logdirs/*/logs/; do
   #find $logdir -type f -name possumlog_\* | egrep -v 0001 | $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
   # we probably know the exact structure, so lets do that insted of globbing
   
-  perl -e "print '$logdir/possumlog_'.sprintf('%04',\$_) for (2...$ncpus)" |
+  perl -e "print '$logdir/possumlog_'.sprintf('%04d',\$_) for (2...$ncpus)" |
     $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
   
 done

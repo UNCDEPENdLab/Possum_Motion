@@ -153,7 +153,7 @@ while(<STDIN>) {
     my $totalExpectedTime = 0;
     $totalExpectedTime = sprintf('%.1f', ($avgVox*3)/$voxPerSec ) if $voxPerSec>0;
     my $remainingSec = $totalExpectedTime - $lifeSecs;
-    $remainingSec = -1 if($remainingSec < 0) 
+    $remainingSec = -1 if($remainingSec < 0) ;
 
 
     print "\t", sprintf("%.0f?",$expectVoxelNum);

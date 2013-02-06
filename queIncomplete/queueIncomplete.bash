@@ -55,11 +55,14 @@ for logdir in $logdirs/*/logs/; do
   # check sim_cfg exists
   [ ! -r $HOME/Possum_Motion/sim_cfg/$sim_cfg ] && echo "Unknown $sim_cfg" && continue #&& exit 1
   
+  # get njobs; WARNING: blockTimes.R assumse all runs will have same # blocks/jobs
+  #  cannot compare across runs if njobs is different!
+  eval "$(grep njobs= $HOME/Possum_Motion/sim_cfg/$sim_cfg )"
   # estimate run times of possum jobs
   #find $logdir -type f -name possumlog_\* | egrep -v 0001 | $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
   # we probably know the exact structure, so lets do that insted of globbing
   
-  perl -le "print '$logdir/possumlog_'.sprintf('%04d',\$_) for (2...$ncpus)" |
+  perl -le "print '$logdir/possumlog_'.sprintf('%04d',\$_) for (1...$njobs)" |
     $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
   
 done

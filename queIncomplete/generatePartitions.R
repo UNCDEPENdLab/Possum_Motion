@@ -58,12 +58,12 @@ times.unfin$knownExample[noinfo] <- knownExMean
 
 remain      <- apply(cbind(times.unfin$expectedsec,times.unfin$knownExample)/60**2,1,max,na.rm=T)
 remain[remain==-Inf] <- knownExMean #mean(times$expectedsec[times$expectedsec>1*60^2],na.rm=T)/60**2
-overidx     <- which(remain<maxTimehr)
-times       <- times.unfin[-overidx,]
-remain <- remain[-overidx]
+overidx     <- which(remain>maxTimehr)
+times       <- times.unfin[-c(overidx),]
+remain <- remain[-c(overidx)]
 if(length(overidx)>0) {
  cat("DROPPED jobs are expted to take over 100 hours\n")
- print(times.unfin[overidx,c('sim_cfg','poss_logfile','expectedsec')] )
+ print(times.unfin[overidx,c('sim_cfg','poss_logfile','expectedsec','knownExample')] )
 }
 # sort(remain,index.return=T)
 

@@ -36,8 +36,7 @@ wide<-reshape(voxels,direction='wide', timevar='sim_cfg', idvar='block')
 long<-melt(wide,id.vars='block')
 voxplot <- ggplot(long,aes(x=block,y=value,group=variable,color=variable))+geom_line()
 
-voxcount$avg <-rowMeans(wide[,-1],na.rm=T)
-voxcount$block <-wide$block
+voxcount <- data.frame(avg = rowMeans(wide[,-1],na.rm=T), block = wide$block )
 
 
 #levels(a$sim_cfg) <- c('bp','ff','avgbp','avgff')

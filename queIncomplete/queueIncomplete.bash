@@ -59,13 +59,13 @@ for logdir in $logdirs/*/logs/; do
   #find $logdir -type f -name possumlog_\* | egrep -v 0001 | $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
   # we probably know the exact structure, so lets do that insted of globbing
   
-  perl -e "print '$logdir/possumlog_'.sprintf('%04d',\$_) for (2...$ncpus)" |
+  perl -le "print '$logdir/possumlog_'.sprintf('%04d',\$_) for (2...$ncpus)" |
     $scriptdir/possumLogtime.pl $sim_cfg >> $outdir/possumTimes.txt
   
 done
 
 # remove duplicate header from perl script
-sed -ie '1,1p;/^sim_cfg\tp/d' $outdir/possumTimes.txt
+sed -i '1,1p;/^sim_cfg\tp/d' $outdir/possumTimes.txt
 
 
 if [ -r /usr/share/modules/init/sh ]; then

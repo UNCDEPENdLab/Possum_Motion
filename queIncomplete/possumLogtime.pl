@@ -51,6 +51,7 @@ while(<STDIN>) {
  next if !$_ ;
  chomp;
  my $logfile=$_;
+ print STDERR "$logfile\n";
  #print "$_ not a log file! (.log\$)" && next if ! m/.log$/;
  if(! -e $logfile) {
   #print STDERR "$logfile DNE\n";

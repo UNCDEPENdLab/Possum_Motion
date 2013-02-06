@@ -52,7 +52,7 @@ times.all   <- read.table(inputfilename,header=T)
 times.unfin <- times.all[times.all$remainingsec!=0,]
 
 noinfo <- is.na(times.unfin$expectedsec)&is.na(times.unfin$knownExample)
-knownExMean <- mean(na.rm=T,times$knownExample)
+knownExMean <- mean(na.rm=T,times.all$knownExample)
 times.unfin$knownExample[noinfo] <- knownExMean
 
 times       <- times.unfin[times.unfin$expectedsec/60**2<maxTimehr,]

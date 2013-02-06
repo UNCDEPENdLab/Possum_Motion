@@ -15,24 +15,25 @@
 ##      * finish-with-#-PBS.bash -- to be submited with  qsub
 ##      * PossumRun.bash         -- copy of local, sourced to set up environment
 ##   
-##    NOTE: Need to remove echo before possom in 'PossumRun.bash' 
+##    NOTE: Need to remove echo before possum in 'PossumRun.bash' 
 ##   
 ##   
 ##  ABOUT:
-##    combines possumLogtime.pl and generateParitions.R
+##    combines possumLogtime.pl and generatePartitions.R
 ##    to choose the best combination of grouped incomplete possum jobs
 ##    such that total run time and processor idle time are minimized
 ##   
 ##   * estimate possum job run times
 ##      find $logdirectory -type f |grep -v 0001 | possumLogtime.pl  > possumTimes.txt
 ##   * optimize job grouping for least idle processor time
-##      Rscript generateParitions.R possumTimes.txt ./
+##      Rscript generatePartitions.R possumTimes.txt ./
 ##   * submitting to qsub (doesn't help much there)
 ##      qsub -N "finish up possum"  finish-with-*-PBS.bash
 ## 
 ##END
 
 set -e 
+set -x
 ncpus=256
 # print help/usage if unexpected input
 [[ -z "$1" || ! -d "$1" ]] && sed -n "/##END/q;s:\$0:$0:g;s/^## //p" $0 && exit 1
@@ -79,7 +80,7 @@ fi
 # need to be here for source command
 cd $scriptdir
 Rscript $scriptdir/blockTimes.R "$outdir/possumTimes.txt" "$outdir/possumTime_withExp.txt"
-Rscript $scriptdir/generateParitions.R "$outdir/possumTime_withExp.txt" "$outdir/"
+Rscript $scriptdir/generatePartitions.R "$outdir/possumTime_withExp.txt" "$outdir/"
 
 # change 
 cd $outdir

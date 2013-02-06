@@ -36,21 +36,34 @@ SimOutDir="$SCRATCH/possum_rsfcmri/$simname/output"
 dircheck "LogDir"
 dircheck "SimOutDir"
 
-echo "SIMRUN:     $SIMRUN"
-echo "SCRATCH:    $SCRATCH"
-echo "OutputDir:  $SimOutDir"
-echo "LogDir:     $LogDir"
-echo "Host:       $HOSTNAME"
-
 #defaults, if not set in the sim cfg
-[ -z "$motion" ] && motion="$motionDir/zeromotion"
-[ -z "$t1input" ] && t1input="$inputDir/possum_10895_fast.nii.gz"
-[ -z "$activ4D" ] && activ4D="$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq.nii.gz"
+[ -z "$motion" ]    && motion="$motionDir/zeromotion"
+[ -z "$t1input" ]   && t1input="$inputDir/possum_10895_fast.nii.gz"
+[ -z "$activ4D" ]   && activ4D="$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq.nii.gz"
 [ -z "$activTime" ] && activTime="$inputDir/activt_150"
-[ -z "$mrPar" ] && mrPar="$inputDir/MRpar_3T"
-[ -z "$slcprof" ] && slcprof="$inputDir/slcprof"
-[ -z "$pulse" ] && pulse="$inputDir/tr2_te30_pulse"
-[ -z "$njobs" ] && njobs=384 #allow njobs to be passed with qsub -v
+[ -z "$mrPar" ]     && mrPar="$inputDir/MRpar_3T"
+[ -z "$slcprof" ]   && slcprof="$inputDir/slcprof"
+[ -z "$pulse" ]     && pulse="$inputDir/tr2_te30_pulse"
+[ -z "$njobs" ]     && njobs=384 #allow njobs to be passed with qsub -v
+[ -z "$TEST" ]      && TEST=0 #default to a full simulation
+
+qsubLog="$LogDir/qsublog_$(date +%d%b%Y-%R)"
+#header of log file
+echo "SIMRUN:       $SIMRUN"    | tee -a "$qsubLog"
+echo "SCRATCH:      $SCRATCH"   | tee -a "$qsubLog"
+echo "OutputDir:    $SimOutDir" | tee -a "$qsubLog"
+echo "LogDir:       $LogDir"    | tee -a "$qsubLog"
+echo "Host:         $HOSTNAME"  | tee -a "$qsubLog"
+echo "Motion file:  $motion"    | tee -a "$qsubLog"
+echo "T1 input:     $t1input"   | tee -a "$qsubLog"
+echo "activ 4D:     $activ4D"   | tee -a "$qsubLog"
+echo "activ time:   $activTime" | tee -a "$qsubLog"
+echo "mr par:       $mrPar"     | tee -a "$qsubLog"
+echo "slc prof:     $slcprof"   | tee -a "$qsubLog"
+echo "pulse:        $pulse"     | tee -a "$qsubLog"
+echo "njobs:        $njobs"     | tee -a "$qsubLog"
+echo "ncpus:        $ncpus"     | tee -a "$qsubLog"
+
 
 ##############################
 ### Possum for each job id ###
@@ -59,8 +72,6 @@ echo "Host:       $HOSTNAME"
 FSLOUTPUTTYPE=NIFTI_GZ
 PATH=$HOME/Possum_Motion/bin/linux:${PATH}
 export PATH FSLOUTPUTTYPE
-
-[ ! -f $inputDir/tr2_te30_pulse ] && bash $inputDir/default_pulse.bash
 
 which ja && ja
 
@@ -82,57 +93,57 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
 
    # run or print out what we would run
 
-   if [ "$TEST" == "1" ]; then
-      ## testing: just say we got here
-      echo 
-      echo possum \
-          --nproc=$njobs \
-          --procid=$jobID_0 \
-          -o $SimOutDir/possum_${jobID_0} \
-          -m $motion \
-          -i $t1input \
-          -x $mrPar \
-          -f $slcprof \
-          -p $pulse \
-          --activ4D=$activ4D \
-          --activt4D=$activTime \
-            ">" $LogFile
-      echo
+#    if [ "$TEST" == "1" ]; then
+#       ## testing: just say we got here
+#       echo 
+#       echo possum \
+#           --nproc=$njobs \
+#           --procid=$jobID_0 \
+#           -o $SimOutDir/possum_${jobID_0} \
+#           -m $motion \
+#           -i $t1input \
+#           -x $mrPar \
+#           -f $slcprof \
+#           -p $pulse \
+#           --activ4D=$activ4D \
+#           --activt4D=$activTime \
+#             ">" $LogFile
+#       echo
 
-   else
+#    else
 
         #wait here until number of running jobs is <= ncpus
 
        joblist=($(jobs -p))
        curjoblist=${joblist[@]}
-       echo 
-       echo "---------" 
-       echo "Jobs running: ${#joblist[*]}"
-       echo "CPU limit: ${ncpus}"
+       echo                                  >> "$qsubLog"
+       echo "---------"                      >> "$qsubLog"
+       echo "Jobs running: ${#joblist[*]}"   >> "$qsubLog"
+       echo "CPU limit: ${ncpus}"            >> "$qsubLog"
        echo
        if [ ! -z ${joblist} ]; then
-           ps -o pid,args -p ${joblist[@]}
+           ps -o pid,args -p ${joblist[@]}   >> "$qsubLog"
        fi
-       echo "---------"
+       echo "---------"                      >> "$qsubLog"
 
        while (( ${#joblist[*]} >= ${ncpus} ))
        do
-           sleep 30
+           sleep 180
            joblist=($(jobs -p))
 
            numrunning=${#joblist[*]}
            #echo "Number of processes running: ${numrunning}"
 
-           if [[ "${joblist[@]}" != "${curjoblist[@]}" ]]; then
-	       echo 
+           if [[ "${joblist[@]}" != "${curjoblist[@]}" && $jobID > $ncpus ]]; then
+	       echo                                   >> "$qsubLog"
 	       echo "---------"
-	       echo "Jobs running: ${#joblist[*]}"
-	       echo "CPU limit: ${ncpus}"
-	       echo             
+	       echo "Jobs running: ${#joblist[*]}"    >> "$qsubLog"
+	       echo "CPU limit: ${ncpus}"             >> "$qsubLog"
+	       echo                                   >> "$qsubLog"
                if [ ! -z ${joblist} ]; then
-                   ps -o pid,args -p ${joblist[@]}
+                   ps -o pid,args -p ${joblist[@]}    >> "$qsubLog"
                fi
-	       echo "---------" 
+	       echo "---------"                       >> "$qsubLog"
 
                curjoblist=${joblist[@]}
            fi
@@ -156,25 +167,18 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
        
        # touch a lock
        date +%F_%R > $SimOutDir/running-$jobID
-        
-       set -x
-       #run the CMD by echoing within a command substitution
-       #need tr to replace backslashes with a space to avoid escaping issues
-       $( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile &
-       set +x
-       pid=$!
+       
+       echo "$possumCmd" #echo the possum command to the screen
 
-       sleep 1 #give the loop a second to rest when forking a bunch of jobs at the beginning of the run 
-       
-      #[[ $HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
-      #which ja &&  ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
-       
-      #-c command report
-      #-h Kilobytes of largest memory usage
-      #-l "additional info"
-      #-s summary report
-      #-t terminates accounting
-   fi
+       if [ "$TEST" -ne "1" ]; then
+           #run the CMD by echoing within a command substitution
+           #need tr to replace backslashes with a space to avoid escaping issues
+	   $( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile &
+	   pid=$!
+
+	   sleep 1 #give the loop a second to rest when forking a bunch of jobs at the beginning of the run 
+       fi
+#   fi
    
    
 done
@@ -209,3 +213,12 @@ rm $SimOutDir/running-*
 # for p in $gt0voxproc; do
 #     echo $p
 # done
+
+      #[[ $HOSTNAME =~ blacklight ]] && ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
+      #which ja &&  ja -chlst > $QueLogDir/${simID}_${jobID}.job.log
+       
+      #-c command report
+      #-h Kilobytes of largest memory usage
+      #-l "additional info"
+      #-s summary report
+      #-t terminates accounting

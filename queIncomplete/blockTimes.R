@@ -54,12 +54,10 @@ long<-melt(wide,id.vars='block')
 timeplot <- ggplot(long,aes(x=block,y=value,group=variable,color=variable))+geom_line()
 
 #
-# create data frame rows=>blocks, columns=>run
+# create data frame 'd' rows=>blocks, columns=>run  
 # find the most complete column/run
 # determine scaling factor for most complete to every other run
 #
-
-
 d<-dcast(long,...~variable)
 # find the least NA possum run config
 bestidx <- which.min(apply(d[,-1],2,function(x){length(which(is.na(x)))} ) ) + 1

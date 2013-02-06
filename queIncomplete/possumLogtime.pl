@@ -150,15 +150,16 @@ while(<STDIN>) {
 
     my $avgVox=sprintf("%.0f",($sumPrevTissue + $expectVoxelNum)/( 1+ ($#voxPerTissue +1) ) );
 
+    my $totalExpectedTime = 0;
+    $totalExpectedTime = sprintf('%.1f', ($avgVox*3)/$voxPerSec ) if $voxPerSec>0;
+    my $remainingSec = $totalExpectedTime - $lifeSecs;
+    $remainingSec = -1 if($remainingSec < 0) 
 
 
     print "\t", sprintf("%.0f?",$expectVoxelNum);
     print "\t", join("\t", ($avgVox."?")x(2 - ($#voxPerTissue+1) )) if $#voxPerTissue < 1;
 
 
-    my $totalExpectedTime = 0;
-    $totalExpectedTime = sprintf('%.1f', ($avgVox*3)/$voxPerSec ) if $voxPerSec>0;
-    my $remainingSec = $totalExpectedTime - $lifeSecs;
 
     #print "\naverage per tissue type is ${avgVox}vox (tot ",$avgVox*3," vox). Should take ${totalExpectedTime}s. already ${lifeSecs}s in\n";
     print "\t$totalExpectedTime\t$remainingSec";

@@ -2,6 +2,7 @@
 # use most completed possum run to guess the time to complete
 #  write out to a new file
 #
+### ASSUMES SAME NUMBER OF BLOCKS FOR EACH COMPARED RUN ###
 #####
 
 
@@ -27,12 +28,24 @@ a$voxT2 <-  as.numeric(a$voxT2)
 a$voxsum<-rowSums(a[,paste('voxT',c(0,1,2),sep="")])
 
 a$poss_logfile <- as.numeric(substring(levels(a$poss_logfile),11))
+
+### Voxels (unused)
+voxels <-subset(a,subset=remainingsec==0,select=c('sim_cfg','poss_logfile','voxsum')) 
+names(voxels)[2] <- 'block'
+wide<-reshape(voxels,direction='wide', timevar='sim_cfg', idvar='block')
+long<-melt(wide,id.vars='block')
+voxplot <- ggplot(long,aes(x=block,y=value,group=variable,color=variable))+geom_line()
+
+voxcount$avg <-rowMeans(wide[,-1],na.rm=T)
+voxcount$block <-wide$block
+
+
 #levels(a$sim_cfg) <- c('bp','ff','avgbp','avgff')
 times <-subset(a,subset=remainingsec==0,select=c('sim_cfg','poss_logfile','expectedsec')) 
-voxels <-subset(a,subset=remainingsec==0,select=c('sim_cfg','poss_logfile','voxsum')) 
 
 a<-a[,-which('voxsum' == names(a))]
 
+## find all finished/known times
 
 names(times)[2] <- 'block'
 names(times)[3] <- 't'
@@ -40,6 +53,12 @@ times$t <- times$t/60**2
 wide<-reshape(times,direction='wide', timevar='sim_cfg', idvar='block')
 long<-melt(wide,id.vars='block')
 timeplot <- ggplot(long,aes(x=block,y=value,group=variable,color=variable))+geom_line()
+
+#
+# create data frame rows=>blocks, columns=>run
+# find the most complete column/run
+# determine scaling factor for most complete to every other run
+#
 
 
 d<-dcast(long,...~variable)
@@ -57,14 +76,8 @@ names(knownExample) <- c('poss_logfile','sim_cfg','knownExample')
 
 a<-a[,-which('knownExample' == names(a))]
 
-newA <- merge(a,knownExample,by=c('sim_cfg','poss_logfile'),sort=F)
+newA <- merge(a,knownExample,by=c('sim_cfg','poss_logfile'),sort=F,all.x=T)
 
-names(voxels)[2] <- 'block'
-wide<-reshape(voxels,direction='wide', timevar='sim_cfg', idvar='block')
-long<-melt(wide,id.vars='block')
-voxplot <- ggplot(long,aes(x=block,y=value,group=variable,color=variable))+geom_line()
-
-voxcount<-rowMeans(wide[,1:4],na.rm=T)
 
 newA$poss_logfile <- sprintf('possumlog_%04d', a$poss_logfile)
 write.table(sep="\t",newA, file=outputfilename, quote=F,row.names=F)

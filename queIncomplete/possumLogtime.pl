@@ -80,7 +80,11 @@ while(<STDIN>) {
   $lifeSecs = $mtime - $log1mtime;
 
   # is it still negative!?
-  print STDERR "WARN: first log is too young ($log1mtime) looking at $_ ($mtime)\n this wont be useful!\n" && next if $lifeSecs<=0;
+  if($lifeSecs<0) {
+    print STDERR "WARN: first log is too young ($log1mtime) looking at $_ ($mtime)\n this wont be useful!\n" ;
+    print join("\t",$sim_cfg, basename($logfile), ('0?')x4,'NA',-1,0),"\n";
+    next;
+  }
   # next
  }
 

@@ -50,6 +50,11 @@ if(is.null(inputfilename) ){
 
 times.all   <- read.table(inputfilename,header=T)
 times.unfin <- times.all[times.all$remainingsec!=0,]
+
+noinfo <- is.na(times.unfin$expectedsec)&is.na(times.unfin$knownExample)
+knownExMean <- mean(na.rm=T,times$knownExample)
+times.unfin$knownExample[noinfo] <- knownExMean
+
 times       <- times.unfin[times.unfin$expectedsec/60**2<maxTimehr,]
 if(dim(times)[1]!=dim(times.unfin)[1]) {
  cat("DROPPED jobs are expted to take over 100 hours\n")
@@ -57,7 +62,7 @@ if(dim(times)[1]!=dim(times.unfin)[1]) {
 }
 
 remain      <- apply(cbind(times$expectedsec,times$knownExample)/60**2,1,max,na.rm=T)
-remain[remain==-Inf] <- 40 #mean(times$expectedsec[times$expectedsec>1*60^2],na.rm=T)/60**2
+remain[remain==-Inf] <- knownExMean #mean(times$expectedsec[times$expectedsec>1*60^2],na.rm=T)/60**2
 # sort(remain,index.return=T)
 
 

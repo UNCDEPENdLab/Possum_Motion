@@ -22,19 +22,34 @@ motionDir=$inputDir/motion_parameters
 
 function dircheck   { eval   dirt=\$$1;    [ -d "$dirt"   ] || mkdir -p $dirt; }
 
+SimRoot="$SCRATCH/possum_rsfcmri"
+
 if [ -n "$SIMRUN" ]; then
     source "$HOME/Possum_Motion/sim_cfg/$SIMRUN"
-    simname=${SIMRUN}_$(date +%d%b%Y-%R)
+
+    simExist=$(
+	ls -d "${SimRoot}/${simName}_"[0-9][0-9][A-Z]* 2>/dev/null |
+	perl -lne "print if m:/${simName}_\d{2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec):"
+	)
+    if [ -z "$simExist" ]; then
+	SimTargetDir=${simName}_$(date +%d%b%Y-%R)
+    else 
+	echo "Resuming run: ${simExist}"
+	SimTargetDir=$( basename $simExist )
+    fi
+
 else
-    simname=simout_$(date +%d%b%Y-%R) #default to runtime/date
+    SimTargetDir=simout_$(date +%d%b%Y-%R) #default to runtime/date
 fi
 
-LogDir="$SCRATCH/possum_rsfcmri/$simname/logs"
-SimOutDir="$SCRATCH/possum_rsfcmri/$simname/output"
+
+
+LogDir="$SimRoot/$SimTargetDir/logs"
+SimOutputDir="$SimRoot/$SimTargetDir/output"
 
 #  check for log file, make if DNE
 dircheck "LogDir"
-dircheck "SimOutDir"
+dircheck "SimOutputDir"
 
 #defaults, if not set in the sim cfg
 [ -z "$motion" ]    && motion="$motionDir/zeromotion"
@@ -49,20 +64,20 @@ dircheck "SimOutDir"
 
 qsubLog="$LogDir/qsublog_$(date +%d%b%Y-%R)"
 #header of log file
-echo "SIMRUN:       $SIMRUN"    | tee -a "$qsubLog"
-echo "SCRATCH:      $SCRATCH"   | tee -a "$qsubLog"
-echo "OutputDir:    $SimOutDir" | tee -a "$qsubLog"
-echo "LogDir:       $LogDir"    | tee -a "$qsubLog"
-echo "Host:         $HOSTNAME"  | tee -a "$qsubLog"
-echo "Motion file:  $motion"    | tee -a "$qsubLog"
-echo "T1 input:     $t1input"   | tee -a "$qsubLog"
-echo "activ 4D:     $activ4D"   | tee -a "$qsubLog"
-echo "activ time:   $activTime" | tee -a "$qsubLog"
-echo "mr par:       $mrPar"     | tee -a "$qsubLog"
-echo "slc prof:     $slcprof"   | tee -a "$qsubLog"
-echo "pulse:        $pulse"     | tee -a "$qsubLog"
-echo "njobs:        $njobs"     | tee -a "$qsubLog"
-echo "ncpus:        $ncpus"     | tee -a "$qsubLog"
+echo "SIMRUN:       $SIMRUN"       | tee -a "$qsubLog"
+echo "SCRATCH:      $SCRATCH"      | tee -a "$qsubLog"
+echo "OutputDir:    $SimOutputDir" | tee -a "$qsubLog"
+echo "LogDir:       $LogDir"       | tee -a "$qsubLog"
+echo "Host:         $HOSTNAME"     | tee -a "$qsubLog"
+echo "Motion file:  $motion"       | tee -a "$qsubLog"
+echo "T1 input:     $t1input"      | tee -a "$qsubLog"
+echo "activ 4D:     $activ4D"      | tee -a "$qsubLog"
+echo "activ time:   $activTime"    | tee -a "$qsubLog"
+echo "mr par:       $mrPar"        | tee -a "$qsubLog"
+echo "slc prof:     $slcprof"      | tee -a "$qsubLog"
+echo "pulse:        $pulse"        | tee -a "$qsubLog"
+echo "njobs:        $njobs"        | tee -a "$qsubLog"
+echo "ncpus:        $ncpus"        | tee -a "$qsubLog"
 
 
 ##############################
@@ -79,80 +94,67 @@ cleanup () {
     echo "Exiting script due to sigint/sigterm/exit"
     ja -chlst    
     # remove running locks
-    rm $SimOutDir/running-*
+    rm $SimOutputDir/running-*
+    find $SimOutputDir -type f | xargs chmod g+rw #make sure Will has permission
+    find $SimOutputDir -type d | xargs chmod g+rx
     exit 0 #make sure the script exits and doesn't run another person
 }
 trap cleanup SIGINT SIGTERM
 
 for ((jobID=1; jobID <= njobs ; jobID++)); do
 
-   # job completion check/parse requires the log file be named only a number
-   LogFile="$LogDir/possumlog_$(printf "%04d" ${jobID})"
+    # job completion check/parse requires the log file be named only a number
+    JobLog="$LogDir/possumlog_$(printf "%04d" ${jobID})"
 
-   let "jobID_0 = jobID - 1"  #possum is zero based, the log structure is not!
+    let "jobID_0 = jobID - 1"  #possum is zero based, the log structure is not!
 
-   # run or print out what we would run
+   # wait here until number of running jobs is <= ncpus
 
-#    if [ "$TEST" == "1" ]; then
-#       ## testing: just say we got here
-#       echo 
-#       echo possum \
-#           --nproc=$njobs \
-#           --procid=$jobID_0 \
-#           -o $SimOutDir/possum_${jobID_0} \
-#           -m $motion \
-#           -i $t1input \
-#           -x $mrPar \
-#           -f $slcprof \
-#           -p $pulse \
-#           --activ4D=$activ4D \
-#           --activt4D=$activTime \
-#             ">" $LogFile
-#       echo
+    joblist=($(jobs -p))
+    curjoblist=${joblist[@]}
+    echo                                  >> "$qsubLog"
+    echo "---------"                      >> "$qsubLog"
+    echo "Jobs running: ${#joblist[*]}"   >> "$qsubLog"
+    echo "CPU limit: ${ncpus}"            >> "$qsubLog"
+    echo
+    if [ ! -z ${joblist} ]; then
+        ps -o pid,args -p ${joblist[@]}   >> "$qsubLog"
+    fi
+    echo "---------"                      >> "$qsubLog"
 
-#    else
+    while (( ${#joblist[*]} >= ${ncpus} ))
+    do
+        sleep 180
+        joblist=($(jobs -p))
 
-        #wait here until number of running jobs is <= ncpus
+        numrunning=${#joblist[*]}
+        #echo "Number of processes running: ${numrunning}"
 
-       joblist=($(jobs -p))
-       curjoblist=${joblist[@]}
-       echo                                  >> "$qsubLog"
-       echo "---------"                      >> "$qsubLog"
-       echo "Jobs running: ${#joblist[*]}"   >> "$qsubLog"
-       echo "CPU limit: ${ncpus}"            >> "$qsubLog"
-       echo
-       if [ ! -z ${joblist} ]; then
-           ps -o pid,args -p ${joblist[@]}   >> "$qsubLog"
-       fi
-       echo "---------"                      >> "$qsubLog"
+        if [[ "${joblist[@]}" != "${curjoblist[@]}" && $jobID > $ncpus ]]; then
+	    echo                                   >> "$qsubLog"
+	    echo "---------"
+	    echo "Jobs running: ${#joblist[*]}"    >> "$qsubLog"
+	    echo "CPU limit: ${ncpus}"             >> "$qsubLog"
+	    echo                                   >> "$qsubLog"
+            if [ ! -z ${joblist} ]; then
+                ps -o pid,args -p ${joblist[@]}    >> "$qsubLog"
+            fi
+	    echo "---------"                       >> "$qsubLog"
 
-       while (( ${#joblist[*]} >= ${ncpus} ))
-       do
-           sleep 180
-           joblist=($(jobs -p))
+            curjoblist=${joblist[@]}
+        fi
+    done
 
-           numrunning=${#joblist[*]}
-           #echo "Number of processes running: ${numrunning}"
-
-           if [[ "${joblist[@]}" != "${curjoblist[@]}" && $jobID > $ncpus ]]; then
-	       echo                                   >> "$qsubLog"
-	       echo "---------"
-	       echo "Jobs running: ${#joblist[*]}"    >> "$qsubLog"
-	       echo "CPU limit: ${ncpus}"             >> "$qsubLog"
-	       echo                                   >> "$qsubLog"
-               if [ ! -z ${joblist} ]; then
-                   ps -o pid,args -p ${joblist[@]}    >> "$qsubLog"
-               fi
-	       echo "---------"                       >> "$qsubLog"
-
-               curjoblist=${joblist[@]}
-           fi
-       done
-      
-       possumCmd="possum \\
+    #don't re-run POSSUM if file already exists
+    if [ -r "$SimOutputDir/possum_${jobID_0}" ]; then
+	echo "Possum output already exists. Skipping job ${jobID}." | tee -a "$qsubLog"
+	echo "File: $SimOutputDir/possum_${jobID_0}"                | tee -a "$qsubLog"
+    else
+	
+	possumCmd="possum \\
            --nproc=$njobs \\
            --procid=$jobID_0 \\
-           -o $SimOutDir/possum_${jobID_0} \\
+           -o $SimOutputDir/possum_${jobID_0} \\
            -m $motion \\
            -i $t1input \\
            -x $mrPar \\
@@ -161,26 +163,24 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
            --activ4D=$activ4D \\
            --activt4D=$activTime"
 
-       echo "Start time: $(date +%d%b%Y-%R)" > $LogFile
-       echo "Start time epoch(s): $(date +%s)" >> $LogFile
-       echo -e "${possumCmd}\n\n" >> $LogFile
-       
-       # touch a lock
-       date +%F_%R > $SimOutDir/running-$jobID
-       
-       echo "$possumCmd" #echo the possum command to the screen
+	echo "Start time: $(date +%d%b%Y-%R)" > $JobLog
+	echo "Start time epoch(s): $(date +%s)" >> $JobLog
+	echo -e "${possumCmd}\n\n" >> $JobLog
+	
+           # touch a lock
+	date +%F_%R > $SimOutputDir/running-$jobID
+	
+	echo "$possumCmd" | tee -a "$qsubLog" #echo the possum command to the screen
 
-       if [ "$TEST" -ne "1" ]; then
-           #run the CMD by echoing within a command substitution
-           #need tr to replace backslashes with a space to avoid escaping issues
-	   $( echo "$possumCmd" | tr "\\\\" " " ) >> $LogFile &
-	   pid=$!
+	if [ "$TEST" -ne "1" ]; then
+           # run the CMD by echoing within a command substitution
+           # need tr to replace backslashes with a space to avoid escaping issues
+	    $( echo "$possumCmd" | tr "\\\\" " " ) >> $JobLog &
+	    pid=$!
 
-	   sleep 1 #give the loop a second to rest when forking a bunch of jobs at the beginning of the run 
-       fi
-#   fi
-   
-   
+	    sleep 1 #give the loop a second to rest when forking a bunch of jobs at the beginning of the run 
+	fi
+    fi   
 done
 
 echo "forked jobs!"
@@ -191,10 +191,11 @@ time wait
 echo "finished!"
 date
 
-ja -chlst
-rm $SimOutDir/running-*
+cleanup #call here, rather than trap signal EXIT because that will execute when one process finishes and exits
 
 
+
+##detritus
 
 #Older idea to separate out zero-voxel runs. Now using a jobs watcher to determine when to fork jobs.
 
@@ -222,3 +223,23 @@ rm $SimOutDir/running-*
       #-l "additional info"
       #-s summary report
       #-t terminates accounting
+
+
+#    if [ "$TEST" == "1" ]; then
+#       ## testing: just say we got here
+#       echo 
+#       echo possum \
+#           --nproc=$njobs \
+#           --procid=$jobID_0 \
+#           -o $SimOutputDir/possum_${jobID_0} \
+#           -m $motion \
+#           -i $t1input \
+#           -x $mrPar \
+#           -f $slcprof \
+#           -p $pulse \
+#           --activ4D=$activ4D \
+#           --activt4D=$activTime \
+#             ">" $JobLog
+#       echo
+
+#    else

@@ -4,6 +4,7 @@ set -e
 
 SimOutBase=$SCRATCH/possum_rsfcmri
 CompleteBase=$SCRATCH/possum_complete
+ArchiveBase=$SCRATCH/possum_archive
 
 while [ -n "$1" ]; do
     case $1 in 
@@ -75,7 +76,7 @@ if [ -r "${SimOutDir}/combined/${SimRun}_possum_simt2_abs.nii" ] || [ -r "${SimO
     done
     
     case ${archiveCombined} in
-	y|Y) echo -e "\n*** Archiving combined"; (cd ${SimOutDir}/combined && tar cvzf "${SimOutDir}/${SimRun}_complete.tar.gz" ./*) ;;
+	y|Y) echo -e "\n*** Archiving combined"; (cd ${SimOutDir}/combined && tar cvzf "${ArchiveBase}/${SimRun}_complete.tar.gz" ./*) ;;
 	n|N) echo -e "\nExiting script"; exit 1 ;;
     esac
 

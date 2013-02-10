@@ -117,7 +117,7 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
     echo "Jobs running: ${#joblist[*]}"   >> "$qsubLog"
     echo "CPU limit: ${ncpus}"            >> "$qsubLog"
     echo
-    if [ ! -z ${joblist} ]; then
+    if [[ ! -z ${joblist} && $jobID > $ncpus ]]; then
         ps -o pid,args -p ${joblist[@]}   >> "$qsubLog"
     fi
     echo "---------"                      >> "$qsubLog"

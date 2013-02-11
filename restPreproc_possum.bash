@@ -3,7 +3,7 @@ set -ex
 
 #if no parameters are passed in, then print help and exit.
 if [ $# -eq 0 ]; then
-    echo "No command line parameters passed. Expect at least -4d."
+    echo "No command line parameters passed. Need -4d and -t1 volumes. Optionally, -smoothing_kernel <mm> -chop_vols <nchop>"
     exit 0
 fi
 
@@ -144,12 +144,16 @@ if [ ! -r func_to_mprage.mat ]; then
 	-interp sinc -sincwidth 7 -sincwindow hanning
 fi
 
-#warp raw POSSUM output to subject template (MNI)
-flirt -in ${funcFile} \
-    -ref ${templateT1} \
-    -out w${funcFile} \
-    -applyxfm -init func_to_mprage.mat \
-    -interp sinc
+if [ $( imtest w${funcFile} ) -eq 0 ]; then
+    #warp raw POSSUM output to subject template (MNI)
+    flirt -in ${funcFile} \
+	-ref ${templateT1} \
+	-out w${funcFile} \
+	-applyxfm -init func_to_mprage.mat \
+	-interp sinc
+fi
+
+3dROIstats -mask ~/Possum_Motion/buildTemplate/10895/mprage/10895_bb264_gmMask_fast_RPI+tlrc -1DRformat w${funcFile}.nii.gz > ${funcDir}w_meanTimeCourses.1D
 
 exit 1
 

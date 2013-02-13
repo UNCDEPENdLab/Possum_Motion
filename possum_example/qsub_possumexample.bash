@@ -5,7 +5,7 @@
 ###                 ###
 
 #PBS -l ncpus=32
-#PBS -l walltime=3:30:00
+#PBS -l walltime=22:00:00
 #PBS -q batch
 #PBS -j oe
 #PBS -M hallquistmn@upmc.edu
@@ -45,6 +45,8 @@ FSLOUTPUTTYPE=NIFTI_GZ
 PATH=$HOME/Possum_Motion/bin/linux:${PATH}
 export PATH FSLOUTPUTTYPE
 
+echo "Possum binary: $(which possum)"
+
 [ ! -r $inputDir/example_pulse ] && source $inputDir/generate_example_pulse.bash
 
 which ja && ja
@@ -59,16 +61,16 @@ for ((jobID=1; jobID <= ncpus ; jobID++)); do
 
     if [ $run4D -eq 1 ]; then
 	possumCmd="possum \\
-          --nproc=$ncpus                   \\
-          --procid=$jobID_0                \\
-          -o $SimOutDir/possum_${jobID_0}  \\
-          -m $inputDir/zeromotion          \\
-          -i $inputDir/brain.nii.gz        \\
-          -x $inputDir/MRpar_3T            \\
-          -f $inputDir/slcprof             \\
-          -p $inputDir/example_pulse       \\
-          --activ4D=example_activ4D       \\
-          --activt4D=example_activ4Dtc.txt"
+          --nproc=$ncpus \\
+          --procid=$jobID_0 \\
+          -o $SimOutDir/possum_${jobID_0} \\
+          -m $inputDir/zeromotion \\
+          -i $inputDir/brain.nii.gz \\
+          -x $inputDir/MRpar_3T \\
+          -f $inputDir/slcprof \\
+          -p $inputDir/example_pulse \\
+          --activ4D=$inputDir/example_activ4D.nii.gz \\
+          --activt4D=$inputDir/example_activ4Dtc.txt"
     else
 	possumCmd="possum \\
           --nproc=$ncpus                   \\
@@ -92,7 +94,8 @@ for ((jobID=1; jobID <= ncpus ; jobID++)); do
     if [ "$TEST" -ne "1" ]; then
         # run the CMD by echoing within a command substitution
         # need tr to replace backslashes with a space to avoid escaping issues
-	$( echo "$possumCmd" | tr "\\\\" " " ) >> $JobLog &
+	#$( echo "$possumCmd" | tr "\\\\" " " ) >> $JobLog
+	bash -c "$possumCmd" >> $JobLog & #for some reason, sometimes the echo above was trying to run the whole thing as a quoted command
 	pid=$!
 	
 	sleep 1 #give the loop a second to rest when forking a bunch of jobs at the beginning of the run 

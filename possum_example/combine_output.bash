@@ -1,7 +1,15 @@
 #!/usr/bin/env sh
 
-SimOutDir=$SCRATCH/possum_example/output
-LogDir=$SCRATCH/possum_example/logs
+[ -z "$run4D" ] && run4D=0
+
+if [ $run4D -eq 1 ]; then
+    SimOutDir=$SCRATCH/possum_example_4d/output
+    LogDir=$SCRATCH/possum_example_4d/logs
+else
+    SimOutDir=$SCRATCH/possum_example/output
+    LogDir=$SCRATCH/possum_example/logs
+fi
+
 inputDir=$HOME/Possum_Motion/possum_example
 
 noutputs=$( find $SimOutDir -iname "possum_*" -type f | wc -l )

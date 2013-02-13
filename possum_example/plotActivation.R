@@ -1,4 +1,5 @@
 library(ggplot2)
+library(plyr)
 library(reshape2)
 
 t2s_static <- 51 #51ms
@@ -7,20 +8,23 @@ tr <- 2
 discardTime <- 6
 setwd("~/Possum_Motion/possum_example")
 
+# outDir <- "~/Possum_Motion/possum_example/output/output3d"
+outDir <- "~/Possum_Motion/possum_example/output/output4d"
+
 #output mean timecourses for 8 ROIs
-activationResults <- read.table("activation_meanTimeCourses.1D", header=TRUE)[,-1]
+activationResults <- read.table(file.path(outDir, "activation_meanTimeCourses.1D"), header=TRUE)[,-1]
 activationResults$time <- 1:nrow(activationResults)*tr + discardTime #activation time course starts at 4th volume, so time starts with 8s
 activationResults$s <- factor("Output")
 
 #get baseline values for each ROI using the third volume (pre-activation)
-baseline <- as.vector(t(read.table("activation_baselinemean.1D", header=TRUE)[,-1])) #obtain as vector
+baseline <- as.vector(t(read.table(file.path(outDir, "activation_baselinemean.1D"), header=TRUE)[,-1])) #obtain as vector
 
 #input 3d timecourse (in 3s TR terms).
 #this modulates the 3d NIFTI file: T2s_est (v) = T2s_static + 3dt * activation (v)
 time3d <- read.table("activation3Dtimecourse", col.names=c("time", "actMult"))
 
 #mean activation values in simulation input 3D NIFTI file (should be in terms of T2* change)
-actInput <- read.table("activation_inputVals.1D", header=TRUE)[,-1]
+actInput <- read.table(file.path(outDir, "activation_inputVals.1D"), header=TRUE)[,-1]
 
 #resample activation scaling onto 2s TR grid using linear interpolation
 time3d.2TR <- data.frame(approx(x=time3d$time, y=time3d$actMult, xout=activationResults$time))

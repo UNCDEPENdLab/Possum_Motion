@@ -173,9 +173,10 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
 	echo "$possumCmd" | tee -a "$qsubLog" #echo the possum command to the screen
 
 	if [ "$TEST" -ne "1" ]; then
-           # run the CMD by echoing within a command substitution
-           # need tr to replace backslashes with a space to avoid escaping issues
-	    $( echo "$possumCmd" | tr "\\\\" " " ) >> $JobLog &
+            # run the CMD by echoing within a command substitution
+            # need tr to replace backslashes with a space to avoid escaping issues
+	    #$( echo "$possumCmd" | tr "\\\\" " " ) >> $JobLog &
+	    bash -c "$possumCmd" >> $JobLog & #for some reason, sometimes the echo above was trying to run the whole thing as a quoted command
 	    pid=$!
 
 	    sleep 1 #give the loop a second to rest when forking a bunch of jobs at the beginning of the run 

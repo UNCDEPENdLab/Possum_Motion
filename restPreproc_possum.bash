@@ -19,6 +19,9 @@ while [ _$1 != _ ] ; do
 	funcFile="${2}"
 	funcNifti="${funcFile}" #retains file extension
 	shift 2
+    elif [[ $1 = -activ4d || $1 = -activ4D ]] ; then
+	activ4D="${2}"
+	shift 2
     elif [ $1 = -smoothing_kernel ] ; then
         smoothing_kernel=${2}
         shift 2
@@ -38,6 +41,7 @@ sigma=$( echo "scale=5; $smoothing_kernel/2.355" | bc )
 
 [ -z "${templateT1}" ] && echo "Template T1 image required: -t1." && exit 1
 [ -z "${funcFile}" ] && echo "Simulated 4D NIFTI image required: -4d." && exit 1
+[ -z "${activ4D}" ] && echo "4D Activation input required: -activ4D." && exit 1
 
 if [ $( imtest ${funcFile} ) -eq 0 ]; then
     echo -e "Raw functional 4D file: $funcFile does not exist.\nPass in as -4d parameter. Exiting.\n"
@@ -45,6 +49,14 @@ if [ $( imtest ${funcFile} ) -eq 0 ]; then
 else
     funcFile=$( remove_ext ${funcFile} )
 fi
+
+if [ $( imtest ${activ4D} ) -eq 0 ]; then
+    echo -e "Activation 4D input file: $activ4D does not exist.\nPass in as -activ4D parameter. Exiting.\n"
+    exit 1
+else
+    activ4D=$( remove_ext ${activ4D} )
+fi
+
 
 scriptDir=$(echo $(cd $(dirname $0); pwd) )
 funcDir=$(dirname $funcFile)
@@ -153,7 +165,18 @@ if [ $( imtest w${funcFile} ) -eq 0 ]; then
 	-interp sinc
 fi
 
-3dROIstats -mask ~/Possum_Motion/buildTemplate/10895/mprage/10895_bb264_gmMask_fast_RPI+tlrc -1DRformat w${funcFile}.nii.gz > ${funcDir}w_meanTimeCourses.1D
+if [ $( imtest ${funcDir}/thirdVol_t1warp ) -eq 0 ]; then
+    flirt -in ${funcDir}/thirdVol \
+	-ref ${templateT1} \
+	-out ${funcDir}/thirdVol_t1warp \
+	-applyxfm -init func_to_mprage.mat \
+	-interp sinc -sincwidth 7 -sincwindow hanning
+fi
+
+roiMask="~/Possum_Motion/buildTemplate/10895/mprage/10895_bb264_gmMask_fast_RPI+tlrc"
+3dROIstats -mask ${roiMask} -1DRformat ${funcDir}/thirdVol_t1warp.nii.gz > ${funcDir}/baseline_ROI_mean.1D
+3dROIstats -mask ${roiMask} -1DRformat ${activ4D}.nii.gz > ${funcDir}/in_ROI_meanTimeCourses.1D
+3dROIstats -mask ${roiMask} -1DRformat w${funcFile}.nii.gz > ${funcDir}/out_ROI_meanTimeCourses.1D
 
 exit 1
 

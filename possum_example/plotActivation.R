@@ -8,15 +8,16 @@ tr <- 2
 discardTime <- 6
 setwd("~/Possum_Motion/possum_example")
 
-# outDir <- "~/Possum_Motion/possum_example/output/output3d"
-outDir <- "~/Possum_Motion/possum_example/output/output4d"
+run <- "4d" #whether to plot results for example using --activ or --activ4D
+
+outDir <- paste0("~/Possum_Motion/possum_example/output/output", run)
 
 #output mean timecourses for 8 ROIs
 activationResults <- read.table(file.path(outDir, "activation_meanTimeCourses.1D"), header=TRUE)[,-1]
 activationResults$time <- 1:nrow(activationResults)*tr + discardTime #activation time course starts at 4th volume, so time starts with 8s
 activationResults$s <- factor("Output")
 
-#get baseline values for each ROI using the third volume (pre-activation)
+#get baseline (static tissue) values for each ROI using the third volume (pre-activation)
 baseline <- as.vector(t(read.table(file.path(outDir, "activation_baselinemean.1D"), header=TRUE)[,-1])) #obtain as vector
 
 #input 3d timecourse (in 3s TR terms).
@@ -36,7 +37,15 @@ actInput.meanOnly <- actInput[,grepl("^Mean", names(actInput), perl=TRUE)]
 act_x_time <- outer(as.numeric(time3d.2TR$actMult), as.numeric(actInput.meanOnly))
 colnames(act_x_time) <- names(actInput.meanOnly)
 
-#just look at range of input values
+#plot raw inputs
+in.melt <- melt(act_x_time, varnames=c("volume", "variable"))
+in.melt$time <- time3d.2TR$time #add time, should recycle
+png(paste0("possum_example", run, "_inputs_t2s.png"), width=7, height=6, units="in", res=150)
+ggplot(in.melt, aes(x=time, y=value)) + facet_wrap(~variable, scales="free_y") + geom_point() + geom_line() +
+  xlab("Time (s)") + ylab("Activation input (delta T2*)") + ggtitle("POSSUM example mean activation input within 8 ROIs")
+dev.off()
+
+#obtain summary statistics for input values
 act3d.inputsummary <- aaply(act_x_time, 2, function(roi) {
   roi <- t(roi) #convert to column vector
   return(c(minAct=min(roi), maxAct=max(roi), medAct=median(roi), iqrAct=IQR(roi)))
@@ -44,9 +53,8 @@ act3d.inputsummary <- aaply(act_x_time, 2, function(roi) {
 
 act3d.agg <- aaply(act3d.inputsummary, 2, mean)
 
-
 #obtain estimated t2* for each timepoint
-act_x_time.t2ms <- act_x_time * 1000 + t2s_static #add t2*static and bring back to ms
+act_x_time.t2ms <- act_x_time * 1000 + t2s_static #add t2*static and convert s -> ms
 
 #now can compute percent change
 #intensity is S = S_0 * exp(-TE/T2*)
@@ -63,8 +71,9 @@ act_x_time.psc <- data.frame( ( (act_x_time.intens / intens.static) - 1 ) * 100 
 act_x_time.psc$time <- time3d.2TR$time #add time
 act_x_time.psc$s <- factor("Input")
 
-#because we don't have a true baseline, the best option is not one of these scalings, but instead to use
-#the third simulated volume as the static tissue value since this is steady state and will represent WM + GM + CSF contributions.
+#Because we don't have a true baseline, the best option is not some sort of voxel mean scaling, but instead to use
+#the third simulated volume as the static tissue value since this is relatively steady state and will represent
+#the WM + GM + CSF contributions to signal intensity.
 
 activation.psc <- data.frame(sapply(1:8, function(x) {
   ( activationResults[,paste("Mean", x, sep="_")]/baseline[x] - 1 ) * 100
@@ -77,14 +86,25 @@ all.psc <- rbind(activation.psc, act_x_time.psc)
 
 act.melt <- melt(all.psc, id.vars=c("time", "s"))
 
-# ggplot(act.melt, aes(x=time, y=value)) + facet_wrap(~s*variable, scales="free_y") + geom_point() + geom_line()
-ggplot(act.melt, aes(x=time, y=value, colour=s)) + facet_wrap(~variable, scales="free_y") + geom_point() + geom_line()
 
-# cor(activationResults[,-1])
+png(paste0("possum_example", run, "_in_vs_out_psc.png"), width=7, height=6, units="in", res=150)
+ggplot(act.melt, aes(x=time, y=value, colour=s)) + facet_wrap(~variable, scales="free_y") + geom_point() + geom_line() +
+  xlab("Time (s)") + ylab("Percent Signal Change") + ggtitle(paste0("POSSUM Example using ", run, " activation: input versus output")) +
+  scale_color_hue("Signal")
+dev.off()
+
+
+#separate panels for ROIs 
+# ggplot(act.melt, aes(x=time, y=value)) + facet_wrap(~s*variable, scales="free_y") + geom_point() + geom_line()
+
+#check input versus output correlation
+# cor(activationResults[,])
 
 #conclusion: looks clean and with perfect temporal correspondence!!
 
 
+
+#Detritus below
 
 #obtain activation input in terms of percent signal change. (more conventional scaling) 
 # act_x_time.psc <- data.frame(apply(act_x_time, 2, function(column) {

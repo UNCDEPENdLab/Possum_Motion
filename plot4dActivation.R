@@ -13,9 +13,11 @@ tr <- 2
 roisToCompare <- 1:20 #which ROIs to plot
 
 discardTime <- 14 #first activation starts at 16 s
-setwd("~/possum_complete/10895_nomot_roiAvg_fullFreq_x10_05Feb2013-09:40/combined")
+# setwd("~/possum_complete/10895_nomot_roiAvg_fullFreq_x10_05Feb2013-09:40/combined")
+setwd("~/possum_complete/10895_nomot_roiAvg_fullFreq_x5_0p1back_19Feb2013-10:40/combined")
 
-run <- "roiAvg_fullFreq_x10"
+# run <- "roiAvg_fullFreq_x10"
+run <- "roiAvg_fullFreq_x5_0p1back"
 
 #get mean time courses for all 264 ROIs
 outputActivation <- read.table("out_ROI_meanTimeCourses.1D", header=TRUE)[,-1]

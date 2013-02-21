@@ -111,7 +111,7 @@ if [ ! -f ${t1dir}/${sid}_t1_2mm_mni152.nii.gz ]; then
 	--logout=fnirt_log.out -v
 
     #warp t1 into 1mm voxels to be used below for tissue segmentation
-    applywarp \
+    [ $( imtest ${sid}_t1_1mm_mni152 ) -eq 0 ] && applywarp \
 	--ref=$mniref_1mm \
 	--in=${sid}_mprage \
 	--out=${sid}_t1_1mm_mni152 \
@@ -144,36 +144,36 @@ if [ ! -f ${t1dir}/${sid}_aseg.nii.gz ]; then
     mri_convert $aseg $t1dir/${sid}_aseg.nii.gz
     
     #extract wm, gm, and ventricle signals from raw aseg
-    3dcalc -overwrite -a ${sid}_aseg.nii.gz -expr 'amongst(a,2,7,41,46,77,78,79)' -prefix ${sid}_WM.nii.gz
-    3dcalc -overwrite -a ${sid}_aseg.nii.gz -expr 'amongst(a,3,8,10,11,12,13,17,18,26,28,42,47,49,50,51,52,53,54,58,60)' -prefix ${sid}_GM.nii.gz
-    3dcalc -overwrite -a ${sid}_aseg.nii.gz -expr 'amongst(a,4,5,14,15,43,44)' -prefix ${sid}_Vent.nii.gz
+    [ $( imtest ${sid}_WM.nii.gz ) -eq 0 ] && 3dcalc -overwrite -a ${sid}_aseg.nii.gz -expr 'amongst(a,2,7,41,46,77,78,79)' -prefix ${sid}_WM.nii.gz
+    [ $( imtest ${sid}_GM.nii.gz ) -eq 0 ] && 3dcalc -overwrite -a ${sid}_aseg.nii.gz -expr 'amongst(a,3,8,10,11,12,13,17,18,26,28,42,47,49,50,51,52,53,54,58,60)' -prefix ${sid}_GM.nii.gz
+    [ $( imtest ${sid}_Vent.nii.gz ) -eq 0 ] && 3dcalc -overwrite -a ${sid}_aseg.nii.gz -expr 'amongst(a,4,5,14,15,43,44)' -prefix ${sid}_Vent.nii.gz
 
     #binarize masks
-    fslmaths ${sid}_WM.nii.gz -bin ${sid}_WM_mask.nii.gz -odt char
-    fslmaths ${sid}_GM.nii.gz -bin ${sid}_GM_mask.nii.gz -odt char
-    fslmaths ${sid}_Vent.nii.gz -bin ${sid}_Vent_mask.nii.gz -odt char
+    [ $( imtest ${sid}_WM_mask_native ) -eq 0 ] && fslmaths ${sid}_WM.nii.gz -bin ${sid}_WM_mask_native.nii.gz -odt char
+    [ $( imtest ${sid}_WM_mask_native ) -eq 0 ] && fslmaths ${sid}_GM.nii.gz -bin ${sid}_GM_mask_native.nii.gz -odt char
+    [ $( imtest ${sid}_WM_mask_native ) -eq 0 ] && fslmaths ${sid}_Vent.nii.gz -bin ${sid}_Vent_mask_native.nii.gz -odt char
 
     #warp masks into MNI space using same coefficients as mprage-to-mni warp
     #use nearest neighbor interpolation to avoid floating point values
-    applywarp \
+    [ $( imtest ${sid}_WM_mask_mni ) -eq 0 ] && applywarp \
 	--ref=$mniref_1mm \
-	--in=${sid}_WM_mask \
+	--in=${sid}_WM_mask_native \
 	--out=${sid}_WM_mask_mni \
 	--warp=${sid}_mprage_warpcoef \
 	--interp=nn \
 	--mask=$mniref_1mm_mask
 
-    applywarp \
+    [ $( imtest ${sid}_GM_mask_mni ) -eq 0 ] && applywarp \
 	--ref=$mniref_1mm \
-	--in=${sid}_GM_mask \
+	--in=${sid}_GM_mask_native \
 	--out=${sid}_GM_mask_mni \
 	--warp=${sid}_mprage_warpcoef \
 	--interp=nn \
 	--mask=$mniref_1mm_mask
 
-    applywarp \
+    [ $( imtest ${sid}_Vent_mask_mni ) -eq 0 ] && applywarp \
 	--ref=$mniref_1mm \
-	--in=${sid}_Vent_mask \
+	--in=${sid}_Vent_mask_native \
 	--out=${sid}_Vent_mask_mni \
 	--warp=${sid}_mprage_warpcoef \
 	--interp=nn \
@@ -567,7 +567,12 @@ if [ ! -f $finalOutput ]; then
 	-prefix ${t2dir}/${sid}_POSSUM4D_bb264_bandpass.nii.gz
 
 fi
+
 exit 0
+
+
+
+
 
 #leftovers from testing
 3dROIstats -mask ${sid}_bb264_gmMask_fs+tlrc -nomeanout -nzvoxels -1DRformat bb264+tlrc > numgmVoxelsIn264ROIs_FS.1D

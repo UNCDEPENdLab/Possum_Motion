@@ -5,7 +5,7 @@
 ###                 ###
 
 #PBS -l ncpus=112
-#PBS -l walltime=48:00:00
+#PBS -l walltime=54:00:00
 #PBS -q batch
 #PBS -j oe
 #PBS -M hallquistmn@upmc.edu
@@ -20,7 +20,14 @@ ncpus=$PBS_NCPUS #set number of jobs to be run equal to cpus requested for qsub
 inputDir=$HOME/Possum_Motion/defaults
 motionDir=$inputDir/motion_parameters
 
+function exists     { eval   file=\$$1;    [ -r "$file"   ] ; }
 function dircheck   { eval   dirt=\$$1;    [ -d "$dirt"   ] || mkdir -p $dirt; }
+## how should we die
+function die {
+   echo $1 #| tee >(cat 1>&2) # hit stdout and stderr, need bash, qsub has .e and .o logs
+   exit 1
+}
+
 
 SimRoot="$SCRATCH/possum_rsfcmri"
 
@@ -78,7 +85,14 @@ echo "slc prof:     $slcprof"      | tee -a "$qsubLog"
 echo "pulse:        $pulse"        | tee -a "$qsubLog"
 echo "njobs:        $njobs"        | tee -a "$qsubLog"
 echo "ncpus:        $ncpus"        | tee -a "$qsubLog"
+echo ""
 
+#verify that required files are present
+for f in "motion" "t1input" "activ4D" "pulse" \
+         "activTime" "mrPar" "slcprof";
+   do
+   exists $f   ||  die "$(eval echo "$f \$$f is not readable")"
+done
 
 ##############################
 ### Possum for each job id ###
@@ -176,7 +190,7 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
             # run the CMD by echoing within a command substitution
             # need tr to replace backslashes with a space to avoid escaping issues
 	    #$( echo "$possumCmd" | tr "\\\\" " " ) >> $JobLog &
-	    bash -c "$possumCmd" >> $JobLog & #for some reason, sometimes the echo above was trying to run the whole thing as a quoted command
+	    bash -c "$possumCmd" >> $JobLog 2>&1 & #for some reason, sometimes the echo above was trying to run the whole thing as a quoted command
 	    pid=$!
 
 	    sleep 1 #give the loop a second to rest when forking a bunch of jobs at the beginning of the run 

@@ -11,7 +11,7 @@ funcFile=
 TR=
 procprefix=
 smoothing_kernel=6
-chop_vols=3 #3dbp says 1 transient issue with 4
+chop_vols=8 #default is to discard 5 volumes for stabilization of magnetization, 3 volumes for static intensity baseline
 
 #process command line parameters
 while [ _$1 != _ ] ; do
@@ -66,6 +66,7 @@ templateGMMask="$scriptDir/buildTemplate/10895/mprage/10895_bb264_gmMask_fast_bi
 mniTemplate_3mm="$scriptDir/buildTemplate/mni_refs/mni_icbm152_t1_tal_nlin_asym_09c_brain_3mm"
 mniTemplate_1mm="$scriptDir/buildTemplate/mni_refs/mni_icbm152_t1_tal_nlin_asym_09c_brain"
 mniMask_3mm="$scriptDir/buildTemplate/mni_refs/mni_icbm152_t1_tal_nlin_asym_09c_mask_3mm"
+roiMask="$scriptDir/buildTemplate/10895/mprage/10895_bb264_gmMask_fast_RPI+tlrc"
 
 #obtain TR from func file (original funcFile from POSSUM is trustworthy), round to 3 dec
 detectTR=$( fslhd ${funcFile} | grep "^pixdim4" | perl -pe 's/pixdim4\s+(\d+)/\1/' | xargs printf "%1.3f" )
@@ -74,9 +75,16 @@ detectTR=$( fslhd ${funcFile} | grep "^pixdim4" | perl -pe 's/pixdim4\s+(\d+)/\1
 #spins have not reached steady state yet and intensities are quite sharp
 
 numVols=$( fslhd ${funcNifti}  | grep '^dim4' | perl -pe 's/dim4\s+(\d+)/\1/' )
-fslroi ${funcFile} ${funcFile}_trunc${chop_vols} ${chop_vols} $(( ${numVols} - ${chop_vols} )) #fslroi uses 0-based indexing with params: first vol, length
-fslroi ${funcFile} ${funcDir}/firstVol 0 1 #used for BBR co-registration
-fslroi ${funcFile} ${funcDir}/thirdVol 2 1 #used for baseline intensity % change computation
+[ $( imtest ${funcFile}_trunc${chop_vols} ) -eq 0 ] && \
+    fslroi ${funcFile} ${funcFile}_trunc${chop_vols} ${chop_vols} $(( ${numVols} - ${chop_vols} )) #fslroi uses 0-based indexing with params: first vol, length
+
+[ $( imtest ${funcDir}/firstVol ) -eq 0 ] && \
+    fslroi ${funcFile} ${funcDir}/firstVol 0 1 #used for BBR co-registration (has best contrast)
+
+if [ $( imtest ${funcDir}/staticIntensity ) -eq 0 ]; then
+    fslroi ${funcFile} ${funcDir}/staticIntensity 5 3 #used for baseline intensity % change computation
+    fslmaths ${funcDir}/staticIntensity -Tmean ${funcDir}/staticIntensity #take temporal mean over the three static volumes
+fi
 
 #ensure that chopped files are used moving forward
 # go where the funcfile is
@@ -162,19 +170,20 @@ if [ $( imtest w${funcFile} ) -eq 0 ]; then
 	-ref ${templateT1} \
 	-out w${funcFile} \
 	-applyxfm -init func_to_mprage.mat \
-	-interp sinc
+	-interp sinc -sincwidth 7 -sincwindow hanning
+        #-interp spline
+	
 fi
 
-if [ $( imtest ${funcDir}/thirdVol_t1warp ) -eq 0 ]; then
-    flirt -in ${funcDir}/thirdVol \
+if [ $( imtest ${funcDir}/staticIntensity_t1warp ) -eq 0 ]; then
+    flirt -in ${funcDir}/staticIntensity \
 	-ref ${templateT1} \
-	-out ${funcDir}/thirdVol_t1warp \
+	-out ${funcDir}/staticIntensity_t1warp \
 	-applyxfm -init func_to_mprage.mat \
 	-interp sinc -sincwidth 7 -sincwindow hanning
 fi
 
-roiMask="~/Possum_Motion/buildTemplate/10895/mprage/10895_bb264_gmMask_fast_RPI+tlrc"
-3dROIstats -mask ${roiMask} -1DRformat ${funcDir}/thirdVol_t1warp.nii.gz > ${funcDir}/baseline_ROI_mean.1D
+3dROIstats -mask ${roiMask} -1DRformat ${funcDir}/staticIntensity_t1warp.nii.gz > ${funcDir}/baseline_ROI_mean.1D
 3dROIstats -mask ${roiMask} -1DRformat ${activ4D}.nii.gz > ${funcDir}/in_ROI_meanTimeCourses.1D
 3dROIstats -mask ${roiMask} -1DRformat w${funcFile}.nii.gz > ${funcDir}/out_ROI_meanTimeCourses.1D
 

@@ -6,14 +6,14 @@
 incmpFile=$1
 if [ -z "$incmpFile" -o ! -r "$incmpFile" ]; then
 	incmpFile=$(date +%F:%H:%M).unfinished
-        lscmd='ls /brashear/hallquis/possum_rsfcmri/*'
+        lscmd='ls -d /brashear/hallquis/possum_rsfcmri/*'
         [[ $HOSTNAME =~ wallace ]] && lscmd="ssh blacklight 'ls /brashear/hallquis/possum_rsfcmri/\*'"
 	for i in $($lscmd); do 
 	  f=$(basename $i)
 	  export $(grep njobs ~/Possum_Motion/sim_cfg/${f%_*-*}) 
 	  comm -13 <(ls $i/output|cut -d_ -f2 |sort -n) <(perl -le "print \$_ for (0..$njobs-1)")|sed -e "s;^;$f\tnotstarted\t$njobs\t;"
 	  grep -L 'Possum finished generating the signal' $i/logs/possumlog* |
-	    xargs -n0 basename | cut -f2 -d_ |sort -n | perl -lne "print \"$f\tincomplete\t$njobs\t\", $_-1"
+	    xargs -n1 basename | cut -f2 -d_ |sort -n | perl -lne "print \"$f\tincomplete\t$njobs\t\", \$_-1"
 	done | tee $incmpFile
 fi
 

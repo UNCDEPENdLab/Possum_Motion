@@ -1,6 +1,27 @@
 #!/usr/bin/env bash
-# arg1 is incomplete file: a tab delim 'sim_cfg {nostarted|incomplete} njobs jobid' listing of incomplete task
-# or no argument to have this file generated
+#
+#  prompt to run unfinished possum jobs in tmux on wallace
+#
+# if run on wallace, script is run on blacklight, output is transfered to wallace, script is finished on wallace
+# if run on blacklight, script is run and instructions on how to run on wallace are printed
+#
+# usage: 
+#  @wallace:     ./runOnWallace.bash
+#  @blacklight:  ./runOnWallace.bash; ssh wallace; scp blacklight:<unfinishedfile> ./; ./runOnWallace.bash <unfishedfile>
+#
+# method:
+#  look at $SCRATCH/possum_rsfcmri for runs
+#   check output and log for incomplete jobs for each run, output to file
+#  parse file, prompt to run each incomplete/unfinished job in tmux on wallace
+#
+# NOTE: 
+#       TODO: check for too many jobs running on wallace
+#       TODO: check job is already complete on wallace
+#       DONE: check job not already running on wallace
+#
+# inputs:
+#   arg1 is incomplete file: a tab delim 'sim_cfg {nostarted|incomplete} njobs jobid' listing of incomplete task
+#   if no argument, this file is generated
 #
 
 incmpFile=$1
@@ -35,7 +56,7 @@ fi
 
 ## Run through jobs
 
-[[ ! $HOSTNAME =~ wallace|gromit ]] && echo "NEED TO BE ON WALLACE!" && echo "scp blacklight:$(pwd)/$incmpFile ./; $(basename $0) $incmpFile" && exit 2
+[[ ! $HOSTNAME =~ wallace|gromit ]] && echo "NEED TO BE ON WALLACE!" && echo "scp blacklight:$(pwd)/$incmpFile ./; ./$(basename $0) $incmpFile" && exit 2
 
 ## Tmux
 # session name

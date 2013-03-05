@@ -5,28 +5,37 @@
 
 incmpFile=$1
 if [ -z "$incmpFile" -o ! -r "$incmpFile" ]; then
-	incmpFile=$(date +%F:%H:%M).unfinished
-        lscmd='ls -d /brashear/hallquis/possum_rsfcmri/*'
-        [[ $HOSTNAME =~ wallace ]] && lscmd="ssh blacklight 'ls -d /brashear/hallquis/possum_rsfcmri/\*'"
-	for i in $($lscmd); do 
-	  f=$(basename $i)
-          # set number of jobs by partially sourcing the sim_cfg
-	  export $(grep njobs ~/Possum_Motion/sim_cfg/${f%_*-*}) 
 
-          # list all jobs and compare to those with possum output to get those that have not started
-          # TODO: use ls logs/$i |grep possumlog instead of ls output/
-	  comm -13 <(ls $i/output|cut -d_ -f2 |sort -n) <(perl -le "print \$_ for (0..$njobs-1)")|sed -e "s;^;$f\tnotstarted\t$njobs\t;"
+   # run this script on blacklight, then again here with the new file
+   if [[ $HOSTNAME =~ wallace|gromit ]]; then
+     cd $(dirname $0)
+     scpcmd=$(ssh blacklight '~/Possum_Motion/queIncomplete/runOnWallace.bash' | tee >(cat >&2)| tail -n1)
+     eval $scpcmd
+     exit
+   fi
 
-          # find possum logs that have not finished (logs that don't match 'finished')
-	  grep -L 'Possum finished generating the signal' $i/logs/possumlog* |
-	    xargs -n1 basename | cut -f2 -d_ |sort -n | perl -lne "print \"$f\tincomplete\t$njobs\t\", \$_-1"
+   # create new incomplete file
+   incmpFile=$(date +%F:%H:%M).unfinished
 
-	done | tee $incmpFile
+   for i in $(ls -d /brashear/hallquis/possum_rsfcmri/*); do 
+     f=$(basename $i)
+     # set number of jobs by partially sourcing the sim_cfg
+     export $(grep njobs ~hallquis/Possum_Motion/sim_cfg/${f%_*-*}) 
+   
+     # list all jobs and compare to those with possum output to get those that have not started
+     # TODO: use ls logs/$i |grep possumlog instead of ls output/
+     comm -13 <(ls $i/output|cut -d_ -f2 |sort -n) <(perl -le "print \$_ for (0..$njobs-1)")|sed -e "s;^;$f\tnotstarted\t$njobs\t;"
+   
+     # find possum logs that have not finished (logs that don't match 'finished')
+     grep -L 'Possum finished generating the signal' $i/logs/possumlog* |
+       xargs -n1 basename | cut -f2 -d_ |sort -n | perl -lne "print \"$f\tincomplete\t$njobs\t\", \$_-1"
+   
+   done | tee $incmpFile
 fi
 
 ## Run through jobs
 
-[[ ! $HOSTNAME =~ wallace|gromit ]] && echo "NEED TO BE ON WALLACE!" && echo "scp blacklight:$(pwd)/$incmpFile ./; $0 $incmpFile" && exit 2
+[[ ! $HOSTNAME =~ wallace|gromit ]] && echo "NEED TO BE ON WALLACE!" && echo "scp blacklight:$(pwd)/$incmpFile ./; $(basename $0) $incmpFile" && exit 2
 
 ## Tmux
 # session name

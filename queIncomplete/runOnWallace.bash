@@ -44,13 +44,13 @@ if [ -z "$incmpFile" -o ! -r "$incmpFile" ]; then
      export $(grep njobs ~hallquis/Possum_Motion/sim_cfg/${f%_*-*}) 
    
      # list all jobs and compare to those with possum output to get those that have not started
-     # TODO: use ls logs/$i |grep possumlog instead of ls output/
-     comm -13 <(ls $i/output|cut -d_ -f2 |sort -n) <(perl -le "print \$_ for (0..$njobs-1)")|sed -e "s;^;$f\tnotstarted\t$njobs\t;"
+     comm -13 <(ls $i/logs |perl -F_ -sanle 'print $F[1]-1 if /possumlog/ ' |sort -n) <(perl -le "print \$_ for (0..$njobs-1)")|sed -e "s;^;$f\tnotstarted\t$njobs\t;"
    
      # find possum logs that have not finished (logs that don't match 'finished')
      grep -L 'Possum finished generating the signal' $i/logs/possumlog* |
        xargs -n1 basename | cut -f2 -d_ |sort -n | perl -lne "print \"$f\tincomplete\t$njobs\t\", \$_-1"
    
+     # TODO: add another comm -23 to remove ids that match  $SimOutputDir/running-$jobID
    done | tee $incmpFile
 fi
 

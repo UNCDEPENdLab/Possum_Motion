@@ -65,10 +65,11 @@ s_name=runPossumJobs
 tmux new-session -s $s_name -d
 
 ## generic possum settings
-inputDir=/home/foranw/src/Possum_Motion/defaults
-sim_cfg_dir=/home/foranw/src/Possum_Motion/sim_cfg
+possumRoot=$( cd $(dirname $0)/..; pwd )
+inputDir=${possumRoot}/defaults
+sim_cfg_dir=${possumRoot}/sim_cfg
 motionDir=$inputDir/motion_parameters
-export SCRATCH=/home/foranw/src/Possum_Motion/scratch/
+export SCRATCH=$HOME/scratch
 SimRoot="$SCRATCH/possum_rsfcmri"
 
 ## loop through incomplete jobs file
@@ -85,7 +86,7 @@ cat $incmpFile | while read sim unfin_type njobs jobid; do
 
   source $sim_cfg_dir/$sim_cfg
   SimOutputDir=$SimRoot/$sim/output
-  SimLogDir=$SimRoot/$sim/log
+  SimLogDir=$SimRoot/$sim/logs
   [ ! -d $SimOutputDir ] && mkdir -p $SimOutputDir
   [ ! -d $SimLogDir ] && mkdir -p $SimLogDir
 

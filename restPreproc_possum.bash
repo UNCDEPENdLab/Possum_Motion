@@ -12,6 +12,8 @@ TR=
 procprefix=
 smoothing_kernel=6
 chop_vols=8 #default is to discard 5 volumes for stabilization of magnetization, 3 volumes for static intensity baseline
+bpLow=.009
+bpHigh=.08
 
 #process command line parameters
 while [ _$1 != _ ] ; do
@@ -22,6 +24,10 @@ while [ _$1 != _ ] ; do
     elif [[ $1 = -activ4d || $1 = -activ4D ]] ; then
 	activ4D="${2}"
 	shift 2
+    elif [ $1 = -bp ] ; then
+	bpLow="${2}"
+	bpHigh="${3}"
+	shift 3
     elif [ $1 = -smoothing_kernel ] ; then
         smoothing_kernel=${2}
         shift 2
@@ -54,18 +60,28 @@ if [ $( imtest ${activ4D} ) -eq 0 ]; then
     echo -e "Activation 4D input file: $activ4D does not exist.\nPass in as -activ4D parameter. Exiting.\n"
     exit 1
 else
+    #convert activ4d to absolute path (if not already)
+    activ4D="$( cd -- "$(dirname ${activ4D})" && pwd)/$(basename ${activ4D})"
     activ4D=$( remove_ext ${activ4D} )
 fi
 
+if [ $( imtest ${templateT1} ) -eq 0 ]; then
+    echo -e "Template t1 input file: $templateT1 does not exist.\nPass in as -t1 parameter. Exiting.\n"
+    exit 1
+else
+    #convert t1 to absolute path (if not already)
+    templateT1="$( cd -- "$(dirname ${templateT1})" && pwd)/$(basename ${templateT1})"
+fi
 
 scriptDir=$(echo $(cd $(dirname $0); pwd) )
-funcDir=$(dirname $funcFile)
+funcDir="$( cd -- "$(dirname ${funcFile})" && pwd)" #convert to abs path
 #should probably require this as a parameter
 templateGMMask="$scriptDir/buildTemplate/10895/mprage/10895_bb264_gmMask_fast_bin+tlrc"
 
 mniTemplate_3mm="$scriptDir/buildTemplate/mni_refs/mni_icbm152_t1_tal_nlin_asym_09c_brain_3mm"
 mniTemplate_1mm="$scriptDir/buildTemplate/mni_refs/mni_icbm152_t1_tal_nlin_asym_09c_brain"
 mniMask_3mm="$scriptDir/buildTemplate/mni_refs/mni_icbm152_t1_tal_nlin_asym_09c_mask_3mm"
+mniMask_1mm="$scriptDir/buildTemplate/mni_refs/mni_icbm152_t1_tal_nlin_asym_09c_mask"
 roiMask="$scriptDir/buildTemplate/10895/mprage/10895_bb264_gmMask_fast_RPI+tlrc"
 
 #obtain TR from func file (original funcFile from POSSUM is trustworthy), round to 3 dec
@@ -86,10 +102,10 @@ if [ $( imtest ${funcDir}/staticIntensity ) -eq 0 ]; then
     fslmaths ${funcDir}/staticIntensity -Tmean ${funcDir}/staticIntensity #take temporal mean over the three static volumes
 fi
 
-#ensure that chopped files are used moving forward
-# go where the funcfile is
-cd $(dirname $funcFile)
-funcFile=$(basename $funcFile)
+# ensure that chopped files are used moving forward
+# change to the directory of the functional for further processing
+cd $funcDir
+funcFile=$(basename $funcFile) #strip directory
 
 funcFile=${funcFile}_trunc${chop_vols}
 funcNifti=${funcFile}.nii.gz
@@ -100,55 +116,63 @@ funcNifti=${funcFile}.nii.gz
 #obtain the WM image from the template brain for use with BBR
 [ $( imtest wm_brain ) -eq 0 ] && fslroi ${templateT1} wm_brain 1 1 #pull just the WM volume from the input brain
 
-#1. slice timing correction
-#placing first see here: http://mindhive.mit.edu/node/109
-procprefix="t$procprefix"
-if [ ! -f ${procprefix}_${funcNifti} ]; then
-    slicetimer -i ${funcFile} -o ${procprefix}_${funcFile} -r ${detectTR}
+#1. motion correction
+if [ ! -f m_${funcNifti} ]; then
+   #align to middle volume (was using mean, but seems less directly interpretable in this context)
+   #mcflirt -in functional -o m_functional -meanvol -stages 4 -sinc_final -rmsabs -rmsrel
+
+   #to be consistent with func-to-struc warp below, use the firstVol as the target for motion co-registration
+   mcflirt -in ${funcFile} -o m_${funcFile} -stages 4 -spline_final -rmsabs -rmsrel -plots -reffile firstVol #if omit refvol, defaults to middle
+
+   #quick reduce to 3-stage for testing (go back to sinc_final once script works)
+   # input: t_* output: mt_*
+   #input=${procprefix:1}_${funcFile}
+   #[ -z "${procprefix:1}" ] && input=$funcFile # input is raw, no prefix exists
+   #mcflirt -in $input -o ${procprefix}_${funcFile} -stages 3 -rmsabs -rmsrel -plots #if omit refvol, defaults to middle
 fi
 
-#2. motion correction
-#procprefix="m$procprefix"
-#if [ ! -f ${procprefix}_${funcNifti} ]; then
-#    #align to middle volume (was using mean, but seems less directly interpretable in this context)
-#    #mcflirt -in functional -o m_functional -meanvol -stages 4 -sinc_final -rmsabs -rmsrel
-#    #mcflirt -in ${funcFile} -o m_${funcFile} -stages 4 -sinc_final -rmsabs -rmsrel -plots #if omit refvol, defaults to middle
-#
-#    #quick reduce to 3-stage for testing (go back to sinc_final once script works)
-#    # input: t_* output: mt_*
-#    input=${procprefix:1}_${funcFile}
-#    [ -z "${procprefix:1}" ] && input=$funcFile # input is raw, no prefix exists
-#    mcflirt -in $input -o ${procprefix}_${funcFile} -stages 3 -rmsabs -rmsrel -plots #if omit refvol, defaults to middle
-#fi
+#2. slice timing correction
+if [ ! -f tm_${funcNifti} ]; then
+    slicetimer -i m_${funcFile} -o tm_${funcFile} -r ${detectTR}
+    slicetimer -i ${funcFile} -o t_${funcFile} -r ${detectTR} #also get slice timing alone
+fi
 
-#1. & 2.  slice time and motion correction 
-#procprefix="mt$procprefix"
-#if [ ! -f ${procprefix}_${funcNifti} ]; then
-#     # ascending = z+ in possum pulse creation
-#     sliceMotion4D --inputs ${funcNifti} --tr ${detectTR} --slice_order ascending
-#     #defaults to -prefix mt   output saved as    mt_simBrain_trunc4.nii.gz
-#fi
+#sticking with traditional preprocessing above for main pipeline. but test 4d correction here
+#1. & 2.  slice time and motion correction
+if [ ! -f j_${funcNifti} ]; then
+    # ascending = z+ in possum pulse creation
+    sliceMotion4D --inputs ${funcNifti} --tr ${detectTR} --slice_order ascending --prefix j_
+fi
 
 #3. skull strip mean functional
-procprefix="k$procprefix" #kmt_
-if [ ! -f ${procprefix}_${funcNifti} ]; then
-    fslmaths ${procprefix:1}_${funcFile} -Tmean ${procprefix:1}_mean_${funcFile} #generate mean functional
-    bet ${procprefix:1}_mean_${funcFile} ${procprefix}_mean_${funcFile} -R -f 0.3 -m #skull strip mean functional
-    fslmaths ${procprefix:1}_${funcFile} -mas ${procprefix}_mean_${funcFile}_mask ${procprefix}_${funcFile} #apply skull strip mask to 4d file
+if [ ! -f ktm_${funcNifti} ]; then
+    fslmaths tm_${funcFile} -Tmean tm_mean_${funcFile} #generate mean functional
+    bet tm_mean_${funcFile} ktm_mean_${funcFile} -R -f 0.3 -m #skull strip mean functional
+    fslmaths tm_${funcFile} -mas ktm_mean_${funcFile}_mask ktm_${funcFile} #apply skull strip mask to 4d file
 fi
 
-#compute the median intensity (prior to co-registration) of voxels within the BET mask
-#(couldn't I just use kmt_${funcFile} since that has the mask applied?)
-median_intensity=$( fslstats "${procprefix:1}_${funcFile}" -k "${procprefix}_mean_${funcFile}_mask" -p 50 )
-
+#consistent with FEAT and preprocessFunctional, mask out low intensity voxels approximating skull strip
 #needed for susan threshold
-p_2=$( fslstats "${procprefix}_${funcFile}" -p 2 )
+p_2=$( fslstats ktm_${funcFile} -p 2 )
+p_98=$( fslstats ktm_${funcFile} -p 98 )
+thresh=$( echo "scale=5; $p_2 + ($p_98 - $p_2)/10" | bc ) #low intensity threshold
+
+#threshold low intensity voxels within the skull-stripped mask
+fslmaths ktm_${funcFile} -thr $thresh -Tmin -bin ktm_${funcFile}_98_2_mask -odt char
+
+#compute the median intensity (prior to co-registration) of voxels within the BET mask
+median_intensity=$( fslstats tm_${funcFile} -k ktm_mean_${funcFile}_mask -p 50 )
+
+#dilate mask 1x
+fslmaths ktm_${funcFile}_98_2_mask -dilF ktm_${funcFile}_98_2_mask_dil1x
+
+#apply low intensity mask -- should be a loose skull strip (unlikely to lose brain voxels)
+fslmaths tm_${funcFile} -mas ktm_${funcFile}_98_2_mask_dil1x ktm_${funcFile}_masked
 
 #from FEAT
 susan_thresh=$( echo "scale=5; ($median_intensity - $p_2) * 0.75" | bc )
 
 #4. co-register the POSSUM output with the POSSUM anatomical (T1) input.
-procprefix="w$procprefix" #wkmt_
 #N.B.: The POSSUM T1 input is already in MNI space and of the desired orientation and voxel size.
 #Thus, the task here is co-registration, NOT warping per se.
 
@@ -156,6 +180,7 @@ procprefix="w$procprefix" #wkmt_
 #standard 6 parameter EPI-to-T1 registration to get initial estimate of transform                                                                                            
 [ ! -r func_to_mprage_init.mat ] && flirt -in firstVol -ref wm_brain -out func_to_mprage -omat func_to_mprage_init.mat -dof 6
 
+#register first volumes to WM T1 segmentation
 if [ ! -r func_to_mprage.mat ]; then
     #now do the BBR-based registration
     flirt -in firstVol -ref wm_brain -out func_to_mprage -omat func_to_mprage.mat \
@@ -164,83 +189,202 @@ if [ ! -r func_to_mprage.mat ]; then
 	-interp sinc -sincwidth 7 -sincwindow hanning
 fi
 
-if [ $( imtest w${funcFile} ) -eq 0 ]; then
-    #warp raw POSSUM output to subject template (MNI)
-    flirt -in ${funcFile} \
-	-ref ${templateT1} \
-	-out w${funcFile} \
-	-applyxfm -init func_to_mprage.mat \
-	-interp sinc -sincwidth 7 -sincwindow hanning
-        #-interp spline
-	
-fi
+#5. warp to MNI
+#N.B. This is slow and RAM intensive because of 1mm size of reference
+#will warp several preceding datasets into MNI to obtain 264 ROI time courses for each step
 
-if [ $( imtest ${funcDir}/staticIntensity_t1warp ) -eq 0 ]; then
-    flirt -in ${funcDir}/staticIntensity \
-	-ref ${templateT1} \
-	-out ${funcDir}/staticIntensity_t1warp \
-	-applyxfm -init func_to_mprage.mat \
-	-interp sinc -sincwidth 7 -sincwindow hanning
-fi
-
-3dROIstats -mask ${roiMask} -1DRformat ${funcDir}/staticIntensity_t1warp.nii.gz > ${funcDir}/baseline_ROI_mean.1D
-3dROIstats -mask ${roiMask} -1DRformat ${activ4D}.nii.gz > ${funcDir}/in_ROI_meanTimeCourses.1D
-3dROIstats -mask ${roiMask} -1DRformat w${funcFile}.nii.gz > ${funcDir}/out_ROI_meanTimeCourses.1D
-
-exit 1
-
-#warp subject mask to 3mm MNI-POSSUM brain using NN
-#shouldn't matter whether MNI template or 10653 since ref is just used for image geometry
-flirt -in ${procprefix:1}_mean_${funcFile}_mask \
-    -ref ${mniTemplate_3mm} \
-    -out ${procprefix}_${funcFile}_mask \
+#first warp subject mask to MNI to constrain warps
+#warp subject mask to 1mm MNI-POSSUM brain using NN
+flirt -in ktm_${funcFile}_98_2_mask_dil1x \
+    -ref wm_brain \
+    -out wktm_${funcFile}_98_2_mask_dil1x \
     -applyxfm -init func_to_mprage.mat \
     -interp nearestneighbour
 
 #ensure that subject mask does not extend beyond bounds of anatomical mask, but may be smaller
 #subtract mni anatomical mask from subject's mask, then threshold at zero (neg values represent areas where anat mask > subj mask)
-fslmaths ${procprefix}_${funcFile}_mask -sub ${mniMask_3mm} -thr 0 ${procprefix}_outofbounds_mask -odt char
+[ $( imtest wktm_outofbounds_mask ) -eq 0 ] && fslmaths wktm_${funcFile}_98_2_mask_dil1x -sub ${mniMask_1mm} -thr 0 wktm_outofbounds_mask -odt char
 
-fslmaths ${procprefix}_${funcFile}_mask -sub ${procprefix}_outofbounds_mask ${procprefix}_${funcFile}_mask_anatTrim -odt char
+[ $( imtest wktm_${funcFile}_mask_anatTrim ) -eq 0 ] && fslmaths wktm_${funcFile}_98_2_mask_dil1x -sub wktm_outofbounds_mask wktm_${funcFile}_mask_anatTrim -odt char
 
-####
-#CONSIDER THE POSSIBILITY THAT WARPING TO MNI 3mm, then upsampling to MNI 1mm to match template may induce a lot of
-#interpolation problems. What if a bunch of static voxels get mixed into the 264 ROIs in the MNI 3mm warp?
-#Maybe warp the raw POSSUM directly to the 1mm template.
-#And also consider avoiding nn for upsampling?
+#run these in parallel
 
+# 1) raw 4d data
+if [ $( imtest w_${funcFile} ) -eq 0 ]; then
+    (    
+        #warp raw POSSUM output to subject template (MNI)
+	flirt -in ${funcFile} \
+	    -ref wm_brain \
+	    -out ${funcDir}/w_${funcFile} \
+	    -applyxfm -init func_to_mprage.mat \
+	    -interp sinc -sincwidth 7 -sincwindow hanning
+            #-interp spline	
 
-#co-register POSSUM-simulated functional to POSSUM input structural at 3mm. (1mm co-registration above mostly for affine mat.
-#stick with spline interpolation for now. Sinc has tendency to blur far outside the mask (as I knew),
-#but what is striking here is that any limitations of the mask are quite magnified by the sinc interpolation, but not spline
-applywarp --ref=${mniTemplate_3mm} \
-    --in=${procprefix:1}_${funcFile} --out=${procprefix}_${funcFile} --premat=func_to_mprage.mat \
-    --interp=spline --mask=${procprefix}_${funcFile}_mask_anatTrim
+        #constrain warped functional to subject + MNI mask
+	fslmaths ${funcDir}/w_${funcFile} -mas wktm_${funcFile}_mask_anatTrim ${funcDir}/w_${funcFile}
+    ) &
+fi
 
-#prior to smoothing, create and an extents mask to ensure that all time series are sampled at all timepoints
-fslmaths ${procprefix}_${funcFile} -Tmin -bin extents_mask -odt char
+# 2) motion correction only
+if [ $( imtest wm_${funcFile} ) -eq 0 ]; then
+    ( 
+        #warp raw POSSUM output to subject template (MNI)
+	flirt -in m_${funcFile} \
+	    -ref wm_brain \
+	    -out ${funcDir}/wm_${funcFile} \
+	    -applyxfm -init func_to_mprage.mat \
+	    -interp sinc -sincwidth 7 -sincwindow hanning
+            #-interp spline	
+
+        #constrain warped functional to subject + MNI mask
+	fslmaths ${funcDir}/wm_${funcFile} -mas wktm_${funcFile}_mask_anatTrim ${funcDir}/wm_${funcFile}
+    ) &
+fi
+
+# 3) slice time correction only
+if [ $( imtest wt_${funcFile} ) -eq 0 ]; then
+    (    
+        #warp raw POSSUM output to subject template (MNI)
+	flirt -in t_${funcFile} \
+	    -ref wm_brain \
+	    -out ${funcDir}/wt_${funcFile} \
+	    -applyxfm -init func_to_mprage.mat \
+	    -interp sinc -sincwidth 7 -sincwindow hanning
+            #-interp spline	
+
+        #constrain warped functional to subject + MNI mask
+	fslmaths ${funcDir}/wt_${funcFile} -mas wktm_${funcFile}_mask_anatTrim ${funcDir}/wt_${funcFile}
+    ) &
+fi
+
+# 4) slice timing and motion correction
+if [ $( imtest wtm_${funcFile} ) -eq 0 ]; then
+    (
+        #warp raw POSSUM output to subject template (MNI)
+	flirt -in tm_${funcFile} \
+	    -ref wm_brain \
+	    -out ${funcDir}/wtm_${funcFile} \
+	    -applyxfm -init func_to_mprage.mat \
+	    -interp sinc -sincwidth 7 -sincwindow hanning
+            #-interp spline	
+
+        #constrain warped functional to subject + MNI mask
+	fslmaths ${funcDir}/wtm_${funcFile} -mas wktm_${funcFile}_mask_anatTrim ${funcDir}/wtm_${funcFile}
+    ) &
+fi
+
+# 5) skull strip, slice timing, and motion correction
+if [ $( imtest wktm_${funcFile} ) -eq 0 ]; then
+    (    
+        #warp raw POSSUM output to subject template (MNI)
+	flirt -in ktm_${funcFile}_masked \
+	    -ref wm_brain \
+	    -out ${funcDir}/wktm_${funcFile} \
+	    -applyxfm -init func_to_mprage.mat \
+	    -interp sinc -sincwidth 7 -sincwindow hanning
+            #-interp spline	
+
+        #constrain warped functional to subject + MNI mask
+	fslmaths ${funcDir}/wktm_${funcFile} -mas wktm_${funcFile}_mask_anatTrim ${funcDir}/wktm_${funcFile}
+    ) &
+fi
+
+# 6) joint slice timing and motion
+if [ $( imtest wj_${funcFile} ) -eq 0 ]; then
+    (    
+        #warp raw POSSUM output to subject template (MNI)
+	flirt -in j_${funcFile} \
+	    -ref wm_brain \
+	    -out ${funcDir}/wj_${funcFile} \
+	    -applyxfm -init func_to_mprage.mat \
+	    -interp sinc -sincwidth 7 -sincwindow hanning
+            #-interp spline	
+
+        #constrain warped functional to subject + MNI mask
+	fslmaths ${funcDir}/j_${funcFile} -mas wktm_${funcFile}_mask_anatTrim ${funcDir}/j_${funcFile}
+    ) &
+fi
+
+#also warp static tissue to MNI to get baseline
+if [ $( imtest ${funcDir}/staticIntensity_t1warp ) -eq 0 ]; then
+    (
+	flirt -in ${funcDir}/staticIntensity \
+	    -ref wm_brain \
+	    -out ${funcDir}/staticIntensity_t1warp \
+	    -applyxfm -init func_to_mprage.mat \
+	    -interp sinc -sincwidth 7 -sincwindow hanning
+
+        #constrain warped functional to subject + MNI mask
+	fslmaths ${funcDir}/staticIntensity_t1warp -mas wktm_${funcFile}_mask_anatTrim ${funcDir}/staticIntensity_t1warp
+    ) &
+fi
+
+wait
+
+#use static tissue intensity in the initial volumes to serve as baseline for scaling PSC
+3dROIstats -mask ${roiMask} -1DRformat ${funcDir}/staticIntensity_t1warp.nii.gz > ${funcDir}/roi264_meanTCs_baseline.1D
+
+#compute mean time courses for activation input in the 264 ROIs
+3dROIstats -mask ${roiMask} -1DRformat ${activ4D}.nii.gz > ${funcDir}/roi264_meanTCs_inputActivation.1D
+
+function save264TCs() {
+    input="$1"
+    preprocSteps="$2" #used for file suffix to denote steps performed
+    output="${funcDir}/roi264_meanTCs_${preprocSteps}.1D"
+
+    3dROIstats -mask ${roiMask} -1DRformat "$input" > $output
+}
+
+#save time courses for initial slice timing, motion, and raw
+save264TCs w_${funcFile}.nii.gz w
+save264TCs wt_${funcFile}.nii.gz wt
+save264TCs wn_${funcFile}.nii.gz wm
+save264TCs wtm_${funcFile}.nii.gz wtm
+save264TCs wktm_${funcFile}.nii.gz wktm
+save264TCs wj_${funcFile}.nii.gz wj
+
+#N.B. The rest of preprocessing proceeds at 1mm resolution. This is costly in terms of time and RAM
+#but need to get snapshots of 264 ROI TCs along the way, which should be done at 1mm.
 
 ############
 # 5. smooth
-procprefix="s$procprefix" #swkmt_
-if [ ! -f ${procprefix}_${funcFile}_${smoothing_kernel}.nii.gz ]; then
-    fslmaths ${procprefix:1}_${funcFile} -Tmean ${procprefix:1}_mean_${funcFile}
-    susan ${procprefix:1}_${funcFile} ${susan_thresh} ${sigma} 3 1 1 ${procprefix:1}_mean_${funcFile} ${susan_thresh} ${procprefix}_${funcFile}_${smoothing_kernel}
+if [ ! -f swktm_${funcFile}_${smoothing_kernel}.nii.gz ]; then
+    #prior to smoothing, create an extents mask to ensure that all time series are sampled at all timepoints
+    fslmaths wktm_${funcFile} -Tmin -bin extents_mask -odt char
+
+    fslmaths wktm_${funcFile} -Tmean wktm_mean_${funcFile}
+    susan wktm_${funcFile} ${susan_thresh} ${sigma} 3 1 1 wktm_mean_${funcFile} ${susan_thresh} swktm_${funcFile}_${smoothing_kernel}
+
+    #now apply the extents mask to eliminate excessive blurring due to smooth and only retain voxels fully sampled in unsmoothed space
+    fslmaths swktm_${funcFile}_${smoothing_kernel} -mul extents_mask swktm_${funcFile}_${smoothing_kernel} -odt float
 fi
 
-#now apply the extents mask to eliminate excessive blurring due to smooth and only retain voxels fully sampled in unsmoothed space
-fslmaths ${procprefix}_${funcFile}_${smoothing_kernel} -mul extents_mask ${procprefix}_${funcFile}_${smoothing_kernel} -odt float
+save264TCs swktm_${funcFile}_${smoothing_kernel}.nii.gz swktm
 
 ##########
-# 6. bandpass
-procprefix="b$procprefix" #bswkmt_
+# 6. scale to PSC
+# use static tissue intensity to scale intensities to percent signal change
+
+3dcalc -a swktm_${funcFile}_${smoothing_kernel}.nii.gz -b staticIntensity_t1warp.nii.gz \
+    -expr '((a/b) - 1)*100' -prefix pswktm_${funcFile}_${smoothing_kernel}.nii.gz
+
+save264TCs pswktm_${funcFile}_${smoothing_kernel}.nii.gz pswktm
+
+#need to think more about how to preserve PSC scaling after bandpass filtering... since there is a detrending process, the
+#means go to zero (remove the DC component) and scaling may change.
+
+##########
+# 7. bandpass
 #use 3dBandpass here for consistency (no nuisance regression, of course)
 #in particular, this is used to quadratic detrend all voxel time series, which makes the scaling to 1.0 sensible.
 # "(2) Removal of a constant+linear+quadratic trend"
 #otherwise, the -ing 100 makes all brain voxels high and all air voxels low. Would need to ing within mask otherwise.
 
-3dBandpass -overwrite -input ${procprefix:1}_${funcFile}_${smoothing_kernel}.* -mask extents_mask.* \
-    -prefix ${procprefix}_${funcFile}_${smoothing_kernel}.nii.gz 0 99999
+if [ ! -f bpswktm_${funcFile}_${smoothing_kernel}.nii.gz ]; then
+    3dBandpass -overwrite -input pswktm_${funcFile}_${smoothing_kernel}.nii.gz -mask extents_mask.nii.gz \
+	-prefix bpswktm_${funcFile}_${smoothing_kernel}.nii.gz ${bpLow} ${bpHigh}
+fi
+
 
 # DSET_NVALS(inset) < 9 == FATAL ERROR: Input dataset is too short!
 # but 3dbandpass needs a min num of subvolumes  and when we remove the first 4 "junk" volumes, we are below this.
@@ -256,27 +400,30 @@ procprefix="b$procprefix" #bswkmt_
 #this will make non-brain voxels 100, and voxels within the brain ~100
 #necessary to scale away from 0 to allow for division against baseline to yield PSC
 #Otherwise, leads to division by zero problems. (should not be problematic here since we did not detrend voxel time series)
-fslmaths ${procprefix}_${funcFile}_${smoothing_kernel} -add 100 -ing 100 ${procprefix}_${funcFile}_${smoothing_kernel}_scaleM100 -odt float
+#fslmaths ${procprefix}_${funcFile}_${smoothing_kernel} -add 100 -ing 100 ${procprefix}_${funcFile}_${smoothing_kernel}_scaleM100 -odt float
 
 #####
 # 7. normalize
-procprefix="n$procprefix" #nbswkmt_
+#procprefix="n$procprefix" #nbswkmt_
 #dividing the M=100 file by 100 yields a proportion of mean scaling (PSC)
-fslmaths ${procprefix:1}_${funcFile}_${smoothing_kernel}_scaleM100 -div 100 ${procprefix}_${funcFile}_${smoothing_kernel}_scale1 -odt float
+#fslmaths ${procprefix:1}_${funcFile}_${smoothing_kernel}_scaleM100 -div 100 ${procprefix}_${funcFile}_${smoothing_kernel}_scale1 -odt float
 
 #okay, should have achieved the functional input with all proper preprocessing and scaling
 
 #need to upsample the final file to 1mm voxels for comparison with original input
 #upsample the preproc data (scale 1) into 1mm voxels to match GM mask
-flirt -in ${procprefix}_${funcFile}_${smoothing_kernel}_scale1 \
-    -ref ${mniTemplate_1mm} \
-    -applyxfm -init ${FSLDIR}/etc/flirtsch/ident.mat \
-    -out ${procprefix}_${funcFile}_${smoothing_kernel}_scale1_1mm -paddingsize 0.0 -interp nearestneighbour
+#flirt -in ${procprefix}_${funcFile}_${smoothing_kernel}_scale1 \
+#    -ref ${mniTemplate_1mm} \
+#    -applyxfm -init ${FSLDIR}/etc/flirtsch/ident.mat \
+#    -out ${procprefix}_${funcFile}_${smoothing_kernel}_scale1_1mm -paddingsize 0.0 -interp nearestneighbour
 
 #now should apply the 244 GM mask to these data for comparison
-3dcalc -overwrite -a ${procprefix}_${funcFile}_${smoothing_kernel}_scale1_1mm.* -b ${templateGMMask} -expr 'a*b' \
-    -prefix ${procprefix}_${funcFile}_${smoothing_kernel}_scale1_1mm_244GMMask.nii.gz
+#3dcalc -overwrite -a ${procprefix}_${funcFile}_${smoothing_kernel}_scale1_1mm.* -b ${templateGMMask} -expr 'a*b' \
+#    -prefix ${procprefix}_${funcFile}_${smoothing_kernel}_scale1_1mm_244GMMask.nii.gz
 
+
+####
+#END
 
 
 #OLD CO-REGISTRATION CODE
@@ -301,3 +448,18 @@ flirt -in ${procprefix}_${funcFile}_${smoothing_kernel}_scale1 \
 #    --out=${procprefix}_${funcFile}_mask \
 #    --premat=func_to_mprage.mat \
 #    --interp=nn
+
+
+####
+#CONSIDER THE POSSIBILITY THAT WARPING TO MNI 3mm, then upsampling to MNI 1mm to match template may induce a lot of
+#interpolation problems. What if a bunch of static voxels get mixed into the 264 ROIs in the MNI 3mm warp?
+#Maybe warp the raw POSSUM directly to the 1mm template.
+#And also consider avoiding nn for upsampling?
+
+#this is now handled above
+#co-register POSSUM-simulated functional to POSSUM input structural at 1mm.
+#stick with spline interpolation for now. Sinc has tendency to blur far outside the mask (as I knew),
+#but what is striking here is that any limitations of the mask are quite magnified by the sinc interpolation, but not spline
+#applywarp --ref=${mniTemplate_1mm} \
+#    --in=ktm_${funcFile}_masked --out=wktm_${funcFile} --premat=func_to_mprage.mat \
+#    --interp=spline --mask=${procprefix}_${funcFile}_mask_anatTrim

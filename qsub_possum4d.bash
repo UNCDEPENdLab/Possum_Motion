@@ -50,7 +50,6 @@ else
 fi
 
 
-
 LogDir="$SimRoot/$SimTargetDir/logs"
 SimOutputDir="$SimRoot/$SimTargetDir/output"
 
@@ -115,12 +114,10 @@ cleanup () {
 }
 trap cleanup SIGINT SIGTERM
 
-for ((jobID=1; jobID <= njobs ; jobID++)); do
+for ((jobID=0; jobID < njobs ; jobID++)); do
 
     # job completion check/parse requires the log file be named only a number
     JobLog="$LogDir/possumlog_$(printf "%04d" ${jobID})"
-
-    let "jobID_0 = jobID - 1"  #possum is zero based, the log structure is not!
 
    # wait here until number of running jobs is <= ncpus
 
@@ -131,7 +128,7 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
     echo "Jobs running: ${#joblist[*]}"   >> "$qsubLog"
     echo "CPU limit: ${ncpus}"            >> "$qsubLog"
     echo
-    if [[ ! -z ${joblist} && $jobID > $ncpus ]]; then
+    if [[ ! -z ${joblist} && "$jobID" -gt "$ncpus" ]]; then
         ps -o pid,args -p ${joblist[@]}   >> "$qsubLog"
     fi
     echo "---------"                      >> "$qsubLog"
@@ -144,7 +141,7 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
         numrunning=${#joblist[*]}
         #echo "Number of processes running: ${numrunning}"
 
-        if [[ "${joblist[@]}" != "${curjoblist[@]}" && $jobID > $ncpus ]]; then
+        if [[ "${joblist[@]}" != "${curjoblist[@]}" && "$jobID" -gt "$ncpus" ]]; then
 	    echo                                   >> "$qsubLog"
 	    echo "---------"
 	    echo "Jobs running: ${#joblist[*]}"    >> "$qsubLog"
@@ -160,15 +157,15 @@ for ((jobID=1; jobID <= njobs ; jobID++)); do
     done
 
     #don't re-run POSSUM if file already exists
-    if [ -r "$SimOutputDir/possum_${jobID_0}" ]; then
+    if [ -r "$SimOutputDir/possum_${jobID}" ]; then
 	echo "Possum output already exists. Skipping job ${jobID}." | tee -a "$qsubLog"
-	echo "File: $SimOutputDir/possum_${jobID_0}"                | tee -a "$qsubLog"
+	echo "File: $SimOutputDir/possum_${jobID}"                  | tee -a "$qsubLog"
     else
 	
 	possumCmd="possum \\
            --nproc=$njobs \\
-           --procid=$jobID_0 \\
-           -o $SimOutputDir/possum_${jobID_0} \\
+           --procid=$jobID \\
+           -o $SimOutputDir/possum_${jobID} \\
            -m $motion \\
            -i $t1input \\
            -x $mrPar \\
@@ -238,23 +235,3 @@ cleanup #call here, rather than trap signal EXIT because that will execute when 
       #-l "additional info"
       #-s summary report
       #-t terminates accounting
-
-
-#    if [ "$TEST" == "1" ]; then
-#       ## testing: just say we got here
-#       echo 
-#       echo possum \
-#           --nproc=$njobs \
-#           --procid=$jobID_0 \
-#           -o $SimOutputDir/possum_${jobID_0} \
-#           -m $motion \
-#           -i $t1input \
-#           -x $mrPar \
-#           -f $slcprof \
-#           -p $pulse \
-#           --activ4D=$activ4D \
-#           --activt4D=$activTime \
-#             ">" $JobLog
-#       echo
-
-#    else

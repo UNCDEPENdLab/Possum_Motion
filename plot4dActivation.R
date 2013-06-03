@@ -106,8 +106,14 @@ outputActivation.psc$time <- outputActivation$time
 outputActivation.psc$s <- factor("Output")
 
 all.psc <- rbind(outputActivation.psc, inputActivation.psc)
+inputActivation.psc.z <- inputActivation.psc
+inputActivation.psc.z[,roisToCompare] <- lapply(inputActivation.psc.z[,roisToCompare], scale)
+outputActivation.psc.z <- outputActivation.psc
+outputActivation.psc.z[,roisToCompare] <- lapply(outputActivation.psc.z[,roisToCompare], scale)
+all.psc.z <- rbind(outputActivation.psc.z, inputActivation.psc.z)
 
 act.melt <- melt(all.psc, id.vars=c("time", "s"))
+act.melt.z <- melt(all.psc.z, id.vars=c("time", "s"))
 
 #such a scaling difference, that overlaying with color obscures in vs out
 # ggplot(act.melt, aes(x=time, y=value, colour=s)) + facet_wrap(~variable, scales="free_y") + geom_point() + geom_line() +
@@ -118,9 +124,10 @@ ggplot(act.melt, aes(x=time, y=value)) + facet_wrap(~s*variable, scales="free_y"
 dev.off()
 
 # overlay inputs and outputs by color
-# ggplot(act.melt, aes(x=time, y=value, color=s)) + facet_wrap(~variable, scales="free_y") + geom_point() + geom_line() +
-#   xlab("Time (s)") + ylab("Percent Signal Change") + ggtitle(paste0("POSSUM resting-state using ", run, " activation: input versus output"))
-
+png(paste0("~/Possum_Motion/output/possum_rest_", run, "_in_vs_out_psc_overlay.png"), width=16, height=11, units="in", res=150)
+ggplot(act.melt.z, aes(x=time, y=value, color=s)) + facet_wrap(~variable, scales="free_y") + geom_point() + geom_line() +
+  xlab("Time (s)") + ylab("Signal change (M=0, SD=1)") + ggtitle(paste0("POSSUM resting-state using ", run, " activation: input versus output"))
+dev.off()
 
 #time series correlation for rois of interest
 outTS <- outputActivation.psc[1:(nrow(outputActivation.psc) - fallOffVols), roisToCompare]

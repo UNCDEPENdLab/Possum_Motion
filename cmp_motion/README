@@ -1,8 +1,9 @@
-For bb244 ROIs, want to see 
- fd
- tran (x y z)
- rot (y p r) 
-compared in no motion and motion simulation as well as real 
+Want to see 
+ - fd of the motion used as input to possum
+ - for motion and no motion simulations (mcflirt)
+    tran (x y z) 
+    rot (y p r) 
+ - (nomotion - motion) difference in select ROIs (random from bb264)
 
 0. run and preprocess simulation 
     see fdM50/preproc.bash
@@ -16,25 +17,37 @@ compared in no motion and motion simulation as well as real
     - difference motion and nomotion
     - roistats for mot, nomot, and diff
 
-2. Plot everything 
+2. Plot
    see showMotion.R
+       https://github.com/LabNeuroCogDevel/Possum_Motion/raw/master/cmp_motion/all.pdf
+ 
+   - {rot.pdf, tran.pdf} for {mcflirt original subject, simulation mot and nomot, and input to possum}
+   - ROI.pdf differences for randomly slected rois
+   - all.pdf frame displacement for psm.in and the above
+
 
 
 ---- scripts ---
+
  0a. ../qsub_possum4d.bash
  0b. restPreproc_possum.bash (as used in fdM50/preproc.bash)
  ---------------
  1.  roidiffs/genDiffs.bash
  2.  showMotion.R
+
 ----------------
 
+
+
 ---input files ---
+
 simulation:
-    nomotion:      10895_nomot_roiAvg_fullFreq_1p9hold_24Feb2013-20:52 
-      motion:      10895_fdM50pct_roiAvg_fullFreq_SHORT_2sTR_31May2013-03:45
-      # prev motion:   10895_nomot_roiAvg_fullFreq_fdM50pct_28Feb2013-19:01
+    nomotion :  10895_nomot_roiAvg_fullFreq_1p9hold_24Feb2013-20:52 
+    motion   :  10895_fdM50pct_roiAvg_fullFreq_SHORT_2sTR_31May2013-03:45 
+   #prevmot  :  10895_nomot_roiAvg_fullFreq_fdM50pct_28Feb2013-19:01
 
 real:
-    /Volumes/Phillips/Rest/Subjects/10761/rest/m_all.par
-    ../defaults/motion_parameters/10761_motion_fdM_50pct
+    mcflirt  : /Volumes/Phillips/Rest/Subjects/10761/rest/m_all.par
+    possum in: ../defaults/motion_parameters/10761_motion_fdM_50pct
+
 ------------------

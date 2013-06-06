@@ -1,3 +1,40 @@
-Compare: 
-no motion to motion
-10895_nomot_roiAvg_fullFreq_1p9hold_24Feb2013-20:52 to 10895_nomot_roiAvg_fullFreq_fdM50pct_28Feb2013-19:01
+For bb244 ROIs, want to see 
+ fd
+ tran (x y z)
+ rot (y p r) 
+compared in no motion and motion simulation as well as real 
+
+0. run and preprocess simulation 
+    see fdM50/preproc.bash
+
+1. We want to see how the simulation differ with motion.
+   Only compare motion corrected (not slice or any further in preproc)
+
+    see roidiffs/genDiffs.bash
+
+    - puts ROIs in subject space
+    - difference motion and nomotion
+    - roistats for mot, nomot, and diff
+
+2. Plot everything 
+   see showMotion.R
+
+
+---- scripts ---
+ 0a. ../qsub_possum4d.bash
+ 0b. restPreproc_possum.bash (as used in fdM50/preproc.bash)
+ ---------------
+ 1.  roidiffs/genDiffs.bash
+ 2.  showMotion.R
+----------------
+
+---input files ---
+simulation:
+    nomotion:      10895_nomot_roiAvg_fullFreq_1p9hold_24Feb2013-20:52 
+      motion:      10895_fdM50pct_roiAvg_fullFreq_SHORT_2sTR_31May2013-03:45
+      # prev motion:   10895_nomot_roiAvg_fullFreq_fdM50pct_28Feb2013-19:01
+
+real:
+    /Volumes/Phillips/Rest/Subjects/10761/rest/m_all.par
+    ../defaults/motion_parameters/10761_motion_fdM_50pct
+------------------

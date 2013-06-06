@@ -1,3 +1,16 @@
+#output: all.pdf, ROI.pdf, tran.pdf, rot.pdf
+#
+# - read mcflirt par files to see motion pulled out of simulation and original fMRI
+#       [ ../qsub_possum4d.bash + ../restPreproc_possum.bash ]
+# - read simulation motion input (psm.in)
+#
+# - calc frame displacment of of psm.in
+# - read subj space per bb264ROI (noMotion - motion) difference in simulated fMRI after only motion correction
+#    [ roidiffs/genDiffs.bash ]
+#
+# - plot everything :)
+
+
 library(ggplot2)
 library(reshape2)
 library(plyr)
@@ -6,109 +19,123 @@ rm(list=ls())
 # j* (or *) slice motion4D -- coreg and slicetiming -- use this to be empiraclly accurate
 # m* mcflirt motion -- use this to stay consistant
 ##
-## possum   t xyz m, r xyz  r
-## mcflirt  r xyz r, t xyz  mm
-##  * need to take possum to deg and mm
+## possum   t xyz meters , r xyz  radians
+## mcflirt  r xyz radians, t xyz  m.meters
+##  * need to take possum to mm (M.H. metioned degrees also?)
 ##  * need to put deg into mm before calc .3 
 TR <- 2
-parfiles<-paste('nomotion',list.files(path='nomotion/',pattern='^m.*par'), sep='/');
-parfiles<-c(parfiles, paste('fdM50',list.files(path='fdM50/',pattern='^m.*par'), sep='/') )
-parfiles<-c(parfiles,'../defaults/motion_parameters/10761_motion_fdM_50pct')
-parfiles<-c(parfiles,'/Volumes/Phillips/Rest/Subjects/10761/rest/m_all.par')
 
-# remove the data.frame that is build iteratively if it already exists
-if(exists('allmotion')) rm('allmotion')
-# load motion from par and what is fed to possum
-for (parfile in parfiles) { 
-  motion <- read.table(parfile)
-  ttl <- strsplit(parfile,'/')[[1]][1]
-  if(ttl==""){ttl<-'10761'; TR<-1.5}
-  if(grepl('par$',parfile)){
-    # mcflirt par file is ordered:
-    #  Rx Ry Rz Tx Ty Tz
-    # in radians and mm
-    # with a step for every TR (time = linenum*2), starting at the first TR
-    # https://www.jiscmail.ac.uk/cgi-bin/webadmin?A2=ind1009&L=FSL&D=0&P=294004
-    names(motion) <- paste( rep(c('rot','tran'),each=3), c('x','y','z'), sep="") 
-    motion$time   <- seq(TR,dim(motion)[1]*TR, by=TR)
-    TR<-2
+motionfiles <- as.data.frame(rbind(
+  # from simulation
+  c('psm.NoMo', "nomotion/m_10895_nomot_roiAvg_fullFreq_1p9hold_possum_simt2_abs_trunc8.par"),
+  c('psm.Mo'  , "fdM50/m_10895_fdM50pct_roiAvg_fullFreq_SHORT_2sTR_possum_simt2_abs_trunc8.par"),
+  # from actual preprocessing
+  c('org.Mo'  , "/Volumes/Phillips/Rest/Subjects/10761/rest/m_all.par")
+))
+names(motionfiles) <- c('ttl','file')
 
-  }
-  else{
-    ttl <- 'fed to possum'
+allmotion <- do.call("rbind",
+ apply(motionfiles,1,
+     function(x){
+       mov      <- read.table(x[2])
+       mov$time <- seq(TR,dim(mov)[1]*TR,by=TR)
+       mov$ttl  <- x[1]
+       mov
+ })
+)
+names(allmotion)[1:6] <- paste( rep(c('rot','tran'),each=3), c('x','y','z'), sep="") 
 
-    # possum needed:
-    # http://fsl.fmrib.ox.ac.uk/fsl/fsl-4.1.9/possum/input.html#motion
-    #    the input motion sequence is defined in the simulator by an input file which specifies: 
-    #    time, Tx, Ty, Tz , Rx, Ry, Rz
-    #
-    #  time    in seconds
-    #  T*      characterising translations - in metres
-    #  R*      characterising rotations about the center of the volume - in radians
-    names(motion)[1] <- 'time'
+############### input motion given to possum #############################################
+# possum needed:
+# http://fsl.fmrib.ox.ac.uk/fsl/fsl-4.1.9/possum/input.html#motion
+#    the input motion sequence is defined in the simulator by an input file which specifies: 
+#    time, Tx, Ty, Tz , Rx, Ry, Rz
+#
+#  time    in seconds
+#  T*      characterising translations - in metres
+#  R*      characterising rotations about the center of the volume - in radians
+psm.in <- read.table("../defaults/motion_parameters/10761_motion_fdM_50pct")
+names(psm.in) <- c("time", "tranx", "trany", "tranz", "rotx", "roty", "rotz") 
+psm.in[,c('tranx','trany','tranz')] <- psm.in[,c('tranx','trany','tranz')] * 10^3
+psm.in$ttl <- 'psm.in'
 
-    names(motion)[2:7] <- paste( rep(c('tran','rot'),each=3), c('x','y','z'), sep="") 
-    motion[5:7] <- motion[5:7] * 10^3
-  }
+allmotion <-rbind(allmotion,psm.in)
 
-  motion$title <- ttl
-  if(exists('allmotion')) {
-      allmotion <- rbind(allmotion, motion)
-  }
-  else {
-      allmotion <- motion
-  }
-  motion <- motion[,c("rotx","roty","rotz","tranx","trany","tranz","time","title")]
-  #print(head(subset(motion,time>16)))
-}
+# rework dataframe for graphing
+m<-melt(allmotion,id.vars=c('time','ttl'))
 
-m<-melt(allmotion,id.vars=c('time','title'))
 
-## df thresh on what is fed to possum
-mot.deriv <- colwise(function(col) c(0, diff(col)))(subset(allmotion,subset=title=='fed to possum')[,1:6]) 
-fd        <- subset(allmotion,subset=title=='fed to possum',select=time)
+# TODO: deal with different times?
+#curious
+#  ddply(allmotion, .(ttl), function(x){max(x$time)})
+# are not all the same
+
+
+##################################################################
+## df thresh on what is fed to possum (psm.in)
+mot.deriv <- colwise(function(col) c(0, diff(col)))(subset(allmotion,subset=ttl=='psm.in')[,1:6]) 
+fd        <- subset(allmotion,subset=ttl=='psm.in',select=time)
 fd$value  <- apply( mot.deriv[ , grepl('tran',names(mot.deriv)) ], 1, function(x) sum(    abs(x) ) ) + 
              apply( mot.deriv[ , grepl('rot' ,names(mot.deriv)) ], 1, function(x) sum( 50*abs(x) ) ) 
-fd$variable <- 'fd'
-fd$title    <- 'fd'
+fd$variable <- 'fd.psm.in'
+fd$ttl      <- 'fd.psm.in'
 
 
-#Michael Hallquist: fd <- apply(mot.deriv[,1:3], 1, function(x) sum(2*pi*50*(abs(x)/360))) +  apply(mot.deriv[,4:6], 1, function(x) sum(abs(x)))
+#MH: fd <- apply(mot.deriv[,1:3], 1, function(x) sum(2*pi*50*(abs(x)/360))) +  apply(mot.deriv[,4:6], 1, function(x) sum(abs(x)))
 #    fd[1] <- NA
-# Michael Hallquist:     mot.deriv <- colwise(function(col) c(0, diff(col)))(mot.raw) #Add 0 at beginning to maintain comparable dimension. raw vs. demean makes no difference in differencing
+# MH:     mot.deriv <- colwise(function(col) c(0, diff(col)))(mot.raw) #Add 0 at beginning to maintain comparable dimension. raw vs. demean makes no difference in differencing
 
+##################################################################
 # load roi differences
 #  raw difference of two possum simulations
 #  264 rois w/rad of 5 (should match generation of possum)
 #  * generated by roidiffs/genDiffs.bash
 # -- column 1 is file (junk) 2 is time, rest selected by sample(1:264,10)
-roiAvgs <- read.table(file='roidiffs/ROIdiff',header=T)[,c(2,181,172,189,80,19,229,105,174,123,55)]
-names(roiAvgs)[1]<-'time'
+
+#ROIidx<-sample(1:264,10)
+ROIidx<-c(2,181,172,189,80,19,229,105,174,123,55)
+roiAvgs <- read.table(file='roidiffs/ROIdiff',header=T)[,ROIidx]
 names(roiAvgs)<-sub('Mean_','ROI ',names(roiAvgs))
+names(roiAvgs)[1]<-'time'
+
 # reads in time as '#[?]' where # is the number of TRs. make this an actual number
-roiAvgs$time  <- as.numeric( sub('[?]','',roiAvgs$time,fixed=T) ) * TR
+#roiAvgs$time  <- as.numeric( sub('[?]','',roiAvgs$time,fixed=T) ) * TR
+roiAvgs$time  <- seq(0,dim(roiAvgs)[1]-1) * TR
+
+## facet for each roi
+r<-melt(roiAvgs,id.vars=c('time'),variable.name='ttl')
+r$variable='Difference'
 
 ## all roi's on one facet
 #r<-melt(roiAvgs,id.vars=c('time','title'))
 #roiAvgs$title <- 'ROI'
 
-## facet for each roi
-r<-melt(roiAvgs,id.vars=c('time'),variable.name='title')
-r$variable='Difference'
 
+
+### ONE BIG GRAPH: all.pdf
 plotdf <- rbind(fd,m,r)
 #plotdf$title <- ifelse(grep('x|y|x',plotdf$variable),paste(sub('x|y|z','',plotdf$variable),plotdf$title,sep="_"),plotdf$title)
 varvec <- grep('x|y|z',plotdf$variable)
-plotdf$title[varvec] <- paste(sub('x|y|z','',plotdf$variable[varvec]),plotdf$title[varvec],sep="_")
+plotdf$ttl[varvec] <- paste(sub('x|y|z','',plotdf$variable[varvec]),plotdf$ttl[varvec],sep=".")
 # box above 0.3, 
 p<-list()
-p[['all']] <- ggplot(plotdf, aes(x=time,y=value,group=variable,color=variable))+geom_line()+theme_bw()+facet_grid(title~.,scales='free')
+p[['all']] <- ggplot(plotdf, aes(x=time,y=value,group=variable,color=variable))+geom_line()+theme_bw()+facet_grid(ttl~.,scales='free')
 pdf('all.pdf',height=12)
 print(p[['all']])
 dev.off()
 
+
+
+### GRAPH for each type: ROI.pdf, rot.pdf, tran.pdf
 for(typ in c('ROI','rot','tran') ) {
- p[[typ]] <- ggplot(subset(plotdf,grepl(typ,title)), aes(x=time,y=value,group=variable,color=variable))+geom_line()+theme_bw()+facet_grid(title~.,scales='free')
+ p[[typ]] <- ggplot(
+	      subset(plotdf,grepl(typ,ttl)), 
+	      aes(x=time,y=value,group=variable,color=variable)
+	     )+
+	     geom_line()+
+	     theme_bw()+
+	     facet_grid(ttl~.,scales='free')
+
  pdf(paste(typ,'.pdf',sep=""))
  print(p[[typ]])
  dev.off()

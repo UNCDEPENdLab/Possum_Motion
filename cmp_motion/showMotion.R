@@ -1,3 +1,4 @@
+
 #output: all.pdf, ROI.pdf, tran.pdf, rot.pdf
 #
 # - read mcflirt par files to see motion pulled out of simulation and original fMRI
@@ -23,7 +24,7 @@ rm(list=ls())
 ## mcflirt  r xyz radians, t xyz  m.meters
 ##  * need to take possum to mm (M.H. metioned degrees also?)
 ##  * need to put deg into mm before calc .3 
-TR <- 2
+
 
 motionfiles <- as.data.frame(rbind(
   # from simulation
@@ -33,12 +34,17 @@ motionfiles <- as.data.frame(rbind(
   c('org.Mo'  , "/Volumes/Phillips/Rest/Subjects/10761/rest/m_all.par")
 ))
 names(motionfiles) <- c('ttl','file')
+# all have TR of 2
+TR <- c()
+TR[as.character(motionfiles$ttl)] <- 2
+# except the original
+TR['org.Mo'] <- 1.5
 
 allmotion <- do.call("rbind",
  apply(motionfiles,1,
      function(x){
        mov      <- read.table(x[2])
-       mov$time <- seq(TR,dim(mov)[1]*TR,by=TR)
+       mov$time <- seq( 0, (dim(mov)[1]-1) * TR[x[1]], by=TR[x[1]] )
        mov$ttl  <- x[1]
        mov
  })
@@ -54,8 +60,15 @@ names(allmotion)[1:6] <- paste( rep(c('rot','tran'),each=3), c('x','y','z'), sep
 #  time    in seconds
 #  T*      characterising translations - in metres
 #  R*      characterising rotations about the center of the volume - in radians
-psm.in <- read.table("../defaults/motion_parameters/10761_motion_fdM_50pct")
+TR['psm.in'] <- 2
+psm.in <- read.table("../defaults/motion_parameters/10761_motion_fdM_50pct_90sec46vol_2TRInterp")
 names(psm.in) <- c("time", "tranx", "trany", "tranz", "rotx", "roty", "rotz") 
+
+# crop out initial zeros, and reset time
+psm.in<-psm.in[ apply(psm.in[,-1],1,function(x){any(x!=0)}),  ]
+psm.in$time <- seq(0,(dim(psm.in)[1]-1)*TR['psm.in'],by=TR['psm.in'])
+
+# mm to meters
 psm.in[,c('tranx','trany','tranz')] <- psm.in[,c('tranx','trany','tranz')] * 10^3
 psm.in$ttl <- 'psm.in'
 
@@ -100,7 +113,7 @@ names(roiAvgs)[1]<-'time'
 
 # reads in time as '#[?]' where # is the number of TRs. make this an actual number
 #roiAvgs$time  <- as.numeric( sub('[?]','',roiAvgs$time,fixed=T) ) * TR
-roiAvgs$time  <- seq(0,dim(roiAvgs)[1]-1) * TR
+roiAvgs$time  <- seq(0,dim(roiAvgs)[1]-1) * TR['psm.NoMo']
 
 ## facet for each roi
 r<-melt(roiAvgs,id.vars=c('time'),variable.name='ttl')
@@ -119,7 +132,8 @@ varvec <- grep('x|y|z',plotdf$variable)
 plotdf$ttl[varvec] <- paste(sub('x|y|z','',plotdf$variable[varvec]),plotdf$ttl[varvec],sep=".")
 # box above 0.3, 
 p<-list()
-p[['all']] <- ggplot(plotdf, aes(x=time,y=value,group=variable,color=variable))+geom_line()+theme_bw()+facet_grid(ttl~.,scales='free')
+p[['all']] <- ggplot(plotdf, aes(x=time,y=value,group=variable,color=variable))+geom_line()+theme_bw()+facet_grid(ttl~.,scales='free') +
+              scale_x_continuous(limits=c(0,max(allmotion[allmotion$ttl=='psm.Mo','time'])) )
 pdf('all.pdf',height=12)
 print(p[['all']])
 dev.off()
@@ -134,7 +148,8 @@ for(typ in c('ROI','rot','tran') ) {
 	     )+
 	     geom_line()+
 	     theme_bw()+
-	     facet_grid(ttl~.,scales='free')
+	     facet_grid(ttl~.,scales='free') +
+             scale_x_continuous(limits=c(0,max(allmotion[allmotion$ttl=='psm.Mo','time'])) )
 
  pdf(paste(typ,'.pdf',sep=""))
  print(p[[typ]])

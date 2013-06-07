@@ -65,8 +65,9 @@ psm.in <- read.table("../defaults/motion_parameters/10761_motion_fdM_50pct_90sec
 names(psm.in) <- c("time", "tranx", "trany", "tranz", "rotx", "roty", "rotz") 
 
 # crop out initial zeros, and reset time
+# because of the crop, time will start at 2 not 0
 psm.in<-psm.in[ apply(psm.in[,-1],1,function(x){any(x!=0)}),  ]
-psm.in$time <- seq(0,(dim(psm.in)[1]-1)*TR['psm.in'],by=TR['psm.in'])
+psm.in$time <- seq(TR['psm.in'],dim(psm.in)[1]*TR['psm.in'],by=TR['psm.in'])
 
 # mm to meters
 psm.in[,c('tranx','trany','tranz')] <- psm.in[,c('tranx','trany','tranz')] * 10^3

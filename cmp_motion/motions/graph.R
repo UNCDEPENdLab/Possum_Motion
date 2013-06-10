@@ -17,7 +17,7 @@ m<-melt(d,id.vars=c('t','name'))
 # max from max(d$t[as.character(d$name)=='psm.mo'])
 p<- ggplot(m,aes(x=t,y=value,color=name,group=name))+
         geom_line()+
-	facet_wrap(~variable,scale='free_y')+
-	scale_x_continuous(limits=c(0,55.5))+
+	facet_grid(variable~.,scale='free_y')+
+	scale_x_continuous(limits=c(0,38*2))+
 	scale_color_brewer(palette='Set2')
 ggsave(file='inVmoVnomo.pdf',p)

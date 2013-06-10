@@ -25,13 +25,13 @@ declare -A niis
 niis=(                       \
      [psm.mo]="../fdM50/m_10895_fdM50pct_roiAvg_fullFreq_SHORT_2sTR_possum_simt2_abs_trunc8.nii.gz"    \
      [psm.nomo]="../nomotion/10895_nomot_roiAvg_fullFreq_1p9hold_possum_simt2_abs_trunc8.nii.gz" \
+     [orig.mo]="/Volumes/Phillips/Rest/Subjects/10761/rest/1076120110519.nii.gz" \
      )
-     #[orig.mo]="/Volumes/Phillips/Rest/Subjects/10761/rest/1076120110519.nii.gz" \
 
 
 for n in "${!niis[@]}"; do
     TR=2
-    [[ $n=~orig ]] && TR=1.5
+    [[ "$n" =~ "orig" ]] && TR=1.5
     # slice times 
     #3dTshift -overwrite\
     #         -tzero 0 -quintic -prefix st.nii.gz \
@@ -39,9 +39,14 @@ for n in "${!niis[@]}"; do
     #         ${niis[$n]}
 
     3dvolreg -overwrite -verbose -zpad 1 -base ${niis[$n]}'[2]' -1Dfile $n.3dvolreg.1D -cubic ${niis[$n]} && rm volreg*
+
+    # put in same units as psm.in
     ../../defaults/motion_parameters/convertDfileToPossum.R $n.3dvolreg.1D $n.1D $TR 
     #writes like: c("t.x", "t.y", "t.z", "r.x", "r.y", "r.z")
 
 done
 
+# cut off the 16s padding added the first time (so possum doesn't flip brains)
 perl -slane '$F[0]-=16; print "@F" if $F[0]>=0' ../../defaults/motion_parameters/10761_motion_fdM_50pct_90sec46vol_2TRInterp > psm.in.1D
+
+R CMD BATCH graph.R

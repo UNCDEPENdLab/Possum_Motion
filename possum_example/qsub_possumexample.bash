@@ -13,9 +13,12 @@
 source /usr/share/modules/init/bash
 
 ncpus=32
+inputDir=$HOME/Possum_Motion/possum_example
 
 [ -z "run4D" ]      && run4D=0 #default to 3d simulation
 [ -z "$TEST" ]      && TEST=1  #default to a test run
+[ -z "motfile" ]    && motFile=$inputDir/zeromotion
+
 
 if [ $run4D -eq 0 ]; then
     SimOutDir=$SCRATCH/possum_example/output
@@ -24,8 +27,6 @@ else
     SimOutDir=$SCRATCH/possum_example_4d/output
     LogDir=$SCRATCH/possum_example_4d/logs
 fi
-
-inputDir=$HOME/Possum_Motion/possum_example
 
 function dircheck   { eval   dirt=\$$1;    [ -d "$dirt"   ] || mkdir -p $dirt; }
 
@@ -64,7 +65,7 @@ for ((jobID=1; jobID <= ncpus ; jobID++)); do
           --nproc=$ncpus \\
           --procid=$jobID_0 \\
           -o $SimOutDir/possum_${jobID_0} \\
-          -m $inputDir/zeromotion \\
+          -m $motFile \\
           -i $inputDir/brain.nii.gz \\
           -x $inputDir/MRpar_3T \\
           -f $inputDir/slcprof \\
@@ -76,7 +77,7 @@ for ((jobID=1; jobID <= ncpus ; jobID++)); do
           --nproc=$ncpus                   \\
           --procid=$jobID_0                \\
           -o $SimOutDir/possum_${jobID_0}  \\
-          -m $inputDir/zeromotion          \\
+          -m $motFile          \\
           -i $inputDir/brain.nii.gz        \\
           -x $inputDir/MRpar_3T            \\
           -f $inputDir/slcprof             \\

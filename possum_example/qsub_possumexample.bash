@@ -15,9 +15,9 @@ source /usr/share/modules/init/bash
 ncpus=32
 inputDir=$HOME/Possum_Motion/possum_example
 
-[ -z "run4D" ]      && run4D=0 #default to 3d simulation
+[ -z "$run4D" ]      && run4D=0 #default to 3d simulation
 [ -z "$TEST" ]      && TEST=1  #default to a test run
-[ -z "motfile" ]    && motFile=$inputDir/zeromotion
+[ -z "$motfile" ]    && motFile=$inputDir/zeromotion
 
 
 if [ $run4D -eq 0 ]; then

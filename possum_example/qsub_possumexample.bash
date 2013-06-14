@@ -1,14 +1,25 @@
 #!/usr/bin/env sh
 
+# usage example:
+#
+#  qsub qsub_possumexample.bash -v run4D=1,motFile=$(pwd)/motionAllLarge_60s,TEST=0
+#
+#  export FSLOUTPUTTYPE=NIFTI_GZ
+#  run4D=1 ./combine_output.bash 
+# 
+#
+
 ###                 ###
 ### options for pbs ###
 ###                 ###
 
+
 #PBS -l ncpus=32
-#PBS -l walltime=22:00:00
+#PBS -l walltime=50:00:00
 #PBS -q batch
 #PBS -j oe
-#PBS -M hallquistmn@upmc.edu
+#PBS -M willforan@gmail.com
+#PBS -m abe
 
 source /usr/share/modules/init/bash
 

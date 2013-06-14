@@ -7,6 +7,11 @@
 #  export FSLOUTPUTTYPE=NIFTI_GZ
 #  run4D=1 ./combine_output.bash 
 # 
+#  ### on skynet
+#  rsync \
+#      foranw@blacklight.psc.teragrid.org:/brashear/foranw/possum_example_4d/output/possum_example_simt2_abs.nii.gz \
+#      /Volumes/Serena/rs-fcMRI_motion_simulation/Possum_Motion/cmp_motion/largeMotionExample/
+  
 #
 
 ###                 ###
@@ -15,7 +20,7 @@
 
 
 #PBS -l ncpus=32
-#PBS -l walltime=50:00:00
+#PBS -l walltime=30:00:00
 #PBS -q batch
 #PBS -j oe
 #PBS -M willforan@gmail.com
@@ -23,12 +28,14 @@
 
 source /usr/share/modules/init/bash
 
+env
+
 ncpus=32
 inputDir=$HOME/Possum_Motion/possum_example
 
 [ -z "$run4D" ]      && run4D=0 #default to 3d simulation
-[ -z "$TEST" ]      && TEST=1  #default to a test run
-[ -z "$motfile" ]    && motFile=$inputDir/zeromotion
+[ -z "$TEST" ]       && TEST=1  #default to a test run
+[ -z "$motFile" ]    && motFile=$inputDir/zeromotion
 
 
 if [ $run4D -eq 0 ]; then

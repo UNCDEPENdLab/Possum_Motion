@@ -92,7 +92,7 @@ if [ -r "${SimOutDir}/combined/${SimRun}_possum_simt2_abs.nii" ] || [ -r "${SimO
     
     case ${deletePossumSep} in
 	y|Y) echo -e "\n*** Deleting possum matrices"; ( rm ${SimOutDir}/output/possum_[0-9]* > /dev/null 2>&1 ) ;;
-	n|N) echo -e "\nExiting script"; exit 1 ;;
+	n|N) echo -e "\nSkipping deletion of POSSUM matrices" ;;
     esac
 
     echo -e "\n----------\nTransfer simulation to complete runs\n"

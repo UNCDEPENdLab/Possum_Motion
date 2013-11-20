@@ -1,6 +1,10 @@
 #!/sw/bin/bash
 set -ex
 ## get motion like how motion was retrived for the input to possum
+#
+# with two arguments, work on a single file
+# with no arguments, work on psm.nomo and psm.mo
+#
 # 
 # originally used dfile from afni_proc.py (instead of preprocFunctional's mcflirt output)
 # -- inputed to R as
@@ -18,17 +22,37 @@ set -ex
 #	pb03.$subj.r$run.tshift+orig		
 #
 
-cd $(dirname $0)
-rm *1D
 declare -A niis
+if [ -z "$1" ]; then
+   cd $(dirname $0)
+   rm *1D
+   
+   niis=(                       \
+        [psm.mo]="../fdM50/m_10895_fdM50pct_roiAvg_fullFreq_SHORT_2sTR_possum_simt2_abs_trunc8.nii.gz"    \
+        [psm.nomo]="../nomotion/10895_nomot_roiAvg_fullFreq_1p9hold_possum_simt2_abs_trunc8.nii.gz" \
+        [orig.mo]="/Volumes/Phillips/Rest/Subjects/10761/rest/1076120110519.nii.gz" \
+        )
 
-niis=(                       \
-     [psm.mo]="../fdM50/m_10895_fdM50pct_roiAvg_fullFreq_SHORT_2sTR_possum_simt2_abs_trunc8.nii.gz"    \
-     [psm.nomo]="../nomotion/10895_nomot_roiAvg_fullFreq_1p9hold_possum_simt2_abs_trunc8.nii.gz" \
-     [orig.mo]="/Volumes/Phillips/Rest/Subjects/10761/rest/1076120110519.nii.gz" \
-     )
+   # cut off the 16s padding added the first time (so possum doesn't flip brains)
+   perl -slane '$F[0]-=16; print "@F" if $F[0]>=0' ../../defaults/motion_parameters/10761_motion_fdM_50pct_90sec46vol_2TRInterp > psm.in.1D
 
+elif [ -n "$2" -a -r "$2" ]; then
+   niis=( [$1]="$2" )
+else
+   cat <<HELP
+   with no arguments, $(basename $0) will write 1D files to $(dirname $0) for orig.mo psm.mo and psm.nomo, and rewrite psm.in.1D in common time
 
+   with two arguments, will write \$1.1D to $(pwd) with \$2
+   ../motions/getMotion.bash largeMotion possum_example_simt2_abs.nii.gz
+   # where largeMotion is what the .1D will be called
+   # and possum_example_simt2_abs.nii.gz is the file to parse
+
+   TR is 2 unless the file name matches 'orig'
+HELP
+
+fi
+   
+   
 for n in "${!niis[@]}"; do
     TR=2
     [[ "$n" =~ "orig" ]] && TR=1.5
@@ -41,12 +65,10 @@ for n in "${!niis[@]}"; do
     3dvolreg -overwrite -verbose -zpad 1 -base ${niis[$n]}'[2]' -1Dfile $n.3dvolreg.1D -cubic ${niis[$n]} && rm volreg*
 
     # put in same units as psm.in
-    ../../defaults/motion_parameters/convertDfileToPossum.R $n.3dvolreg.1D $n.1D $TR 
+    $(dirname $0)/../../defaults/motion_parameters/convertDfileToPossum.R $n.3dvolreg.1D $n.1D $TR 
     #writes like: c("t.x", "t.y", "t.z", "r.x", "r.y", "r.z")
 
 done
 
-# cut off the 16s padding added the first time (so possum doesn't flip brains)
-perl -slane '$F[0]-=16; print "@F" if $F[0]>=0' ../../defaults/motion_parameters/10761_motion_fdM_50pct_90sec46vol_2TRInterp > psm.in.1D
 
-R CMD BATCH graph.R
+R CMD BATCH $(dirname $0)/graph.R

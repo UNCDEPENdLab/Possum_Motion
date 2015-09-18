@@ -1,0 +1,11 @@
+[ ! -r $inputDir/tr2_te30_pulse ] && bash $inputDir/default_pulse.bash
+
+simName="10807_fdCenpct99pct_roiAvg_fullFreq"
+motion="$motionDir/10807_motion_fdCenpct_99pct_dfile_2s_interp"
+t1input="$inputDir/possum_10895_fast.nii.gz"
+activ4D="$inputDir/10895_POSSUM4D_bb264_roiAvg_fullFreq_DOUBLE.nii.gz"
+activTime="$inputDir/activt_150_hold1p9"
+mrPar="$inputDir/MRpar_3T"
+slcprof="$inputDir/slcprof"
+pulse="$inputDir/tr2_te30_pulse"
+njobs=512
